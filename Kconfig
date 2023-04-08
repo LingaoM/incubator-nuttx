@@ -2110,8 +2110,7 @@ endmenu # Debug Options
 menuconfig  TRACE
 	bool "Enable tracepoints"
 	default n
-	depends on DRIVERS_NOTE
-	depends on SCHED_INSTRUMENTATION
+	depends on SCHED_INSTRUMENTATION_DUMP
 	---help---
 		If this option is enabled, tracepoints at critical code in
 		the kernel will be enabled.
