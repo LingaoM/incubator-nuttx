@@ -31,7 +31,6 @@ CFLAGS += $(INCLUDES)
 CXXFLAGS += $(INCLUDES)
 AFLAGS += $(INCLUDES)
 
-CFLAGS += -Wl,-Ttext-segment=0x400000
 NUTTX = $(call CONVERT_PATH,$(TOPDIR)$(DELIM)nuttx$(EXEEXT))
 
 # Determine which objects are required in the link.The
