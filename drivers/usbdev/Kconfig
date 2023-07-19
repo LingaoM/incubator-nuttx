@@ -182,6 +182,12 @@ config USBDEV_EP8_TXFIFO_SIZE
 
 endif # USBDEV_CUSTOM_TXFIFO_SIZE
 
+config USBDEV_NPOLLWAITERS
+	int "Number of poll waiters"
+	default 1
+	---help---
+		Maximum number of threads that can be waiting on poll().
+
 comment "USB Device Class Driver Options"
 
 menuconfig USBDEV_COMPOSITE
