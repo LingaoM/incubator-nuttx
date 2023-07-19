@@ -957,6 +957,8 @@ int udp_connect(FAR struct udp_conn_s *conn, FAR const struct sockaddr *addr)
 
   if (addr != NULL)
     {
+      conn->sconn.s_flags |= _SF_CONNECTED;
+
 #ifdef CONFIG_NET_IPv4
 #ifdef CONFIG_NET_IPv6
       if (conn->domain == PF_INET)
@@ -1003,6 +1005,7 @@ int udp_connect(FAR struct udp_conn_s *conn, FAR const struct sockaddr *addr)
   else
     {
       conn->rport = 0;
+      conn->sconn.s_flags &= ~_SF_CONNECTED;
 
 #ifdef CONFIG_NET_IPv4
 #ifdef CONFIG_NET_IPv6
