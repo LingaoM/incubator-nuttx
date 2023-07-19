@@ -56,6 +56,7 @@ list(
   sim_cpuinfo.c
   sim_registerdump.c
   sim_saveusercontext.c
+  sim_tcbinfo.c
   sim_textheap.c)
 
 if(CONFIG_HOST_X86_64)
