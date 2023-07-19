@@ -902,7 +902,6 @@ uart_bth5_open(FAR struct file *filep)
     {
       wlerr("error, bluetooth driver open timeout");
       nxmutex_unlock(&dev->openlock);
-      ASSERT(0);
       return ret;
     }
 
