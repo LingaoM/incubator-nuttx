@@ -48,7 +48,7 @@
  *
  ****************************************************************************/
 
-int i3c_device_do_priv_xfers(FAR struct i3c_device *dev,
+int i3c_device_do_priv_xfers(FAR const struct i3c_device *dev,
                              FAR struct i3c_priv_xfer *xfers,
                              int nxfers)
 {
@@ -85,7 +85,7 @@ int i3c_device_do_priv_xfers(FAR struct i3c_device *dev,
  *
  ****************************************************************************/
 
-void i3c_device_get_info(FAR struct i3c_device *dev,
+void i3c_device_get_info(FAR const struct i3c_device *dev,
                          FAR struct i3c_device_info *info)
 {
   if (!info)
@@ -119,7 +119,7 @@ void i3c_device_get_info(FAR struct i3c_device *dev,
  *
  ****************************************************************************/
 
-int i3c_device_disable_ibi(FAR struct i3c_device *dev)
+int i3c_device_disable_ibi(FAR const struct i3c_device *dev)
 {
   int ret = -ENOENT;
 
@@ -157,7 +157,7 @@ int i3c_device_disable_ibi(FAR struct i3c_device *dev)
  *
  ****************************************************************************/
 
-int i3c_device_enable_ibi(FAR struct i3c_device *dev)
+int i3c_device_enable_ibi(FAR const struct i3c_device *dev)
 {
   int ret = -ENOENT;
 
@@ -193,7 +193,7 @@ int i3c_device_enable_ibi(FAR struct i3c_device *dev)
  *
  ****************************************************************************/
 
-int i3c_device_request_ibi(FAR struct i3c_device *dev,
+int i3c_device_request_ibi(FAR const struct i3c_device *dev,
                            FAR const struct i3c_ibi_setup *req)
 {
   int ret = -ENOENT;
@@ -231,7 +231,7 @@ int i3c_device_request_ibi(FAR struct i3c_device *dev,
  *
  ****************************************************************************/
 
-void i3c_device_free_ibi(FAR struct i3c_device *dev)
+void i3c_device_free_ibi(FAR const struct i3c_device *dev)
 {
   i3c_bus_normaluse_lock(dev->bus);
   if (dev->desc)

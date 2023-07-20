@@ -270,7 +270,7 @@ struct i3c_ibi_setup
  *
  ****************************************************************************/
 
-int i3c_device_do_priv_xfers(FAR struct i3c_device *dev,
+int i3c_device_do_priv_xfers(FAR const struct i3c_device *dev,
                              FAR struct i3c_priv_xfer *xfers,
                              int nxfers);
 
@@ -284,7 +284,7 @@ int i3c_device_do_priv_xfers(FAR struct i3c_device *dev,
  *
  ****************************************************************************/
 
-void i3c_device_get_info(FAR struct i3c_device *dev,
+void i3c_device_get_info(FAR const struct i3c_device *dev,
                          FAR struct i3c_device_info *info);
 
 /****************************************************************************
@@ -304,7 +304,7 @@ void i3c_device_get_info(FAR struct i3c_device *dev,
  *
  ****************************************************************************/
 
-int i3c_device_disable_ibi(FAR struct i3c_device *dev);
+int i3c_device_disable_ibi(FAR const struct i3c_device *dev);
 
 /****************************************************************************
  * Name: i3c_device_enable_ibi()
@@ -327,7 +327,7 @@ int i3c_device_disable_ibi(FAR struct i3c_device *dev);
  *
  ****************************************************************************/
 
-int i3c_device_enable_ibi(FAR struct i3c_device *dev);
+int i3c_device_enable_ibi(FAR const struct i3c_device *dev);
 
 /****************************************************************************
  * Name: i3c_device_request_ibi()
@@ -348,7 +348,7 @@ int i3c_device_enable_ibi(FAR struct i3c_device *dev);
  *
  ****************************************************************************/
 
-int i3c_device_request_ibi(FAR struct i3c_device *dev,
+int i3c_device_request_ibi(FAR const struct i3c_device *dev,
                            FAR const struct i3c_ibi_setup *req);
 
 /****************************************************************************
@@ -366,7 +366,7 @@ int i3c_device_request_ibi(FAR struct i3c_device *dev,
  *
  ****************************************************************************/
 
-void i3c_device_free_ibi(FAR struct i3c_device *dev);
+void i3c_device_free_ibi(FAR const struct i3c_device *dev);
 
 /****************************************************************************
  * Name: i3c_master_find_i3c_dev()
