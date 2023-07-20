@@ -95,7 +95,7 @@ static inline void mempool_add_backtrace(FAR struct mempool_s *pool,
     {
       int result = sched_backtrace(buf->pid, buf->backtrace,
                                    CONFIG_MM_BACKTRACE,
-                                   CONFIG_MM_BACKTRACE_SKIP);
+                                   CONFIG_MM_HEAP_MEMPOOL_BACKTRACE_SKIP);
       if (result < CONFIG_MM_BACKTRACE)
         {
           buf->backtrace[result] = NULL;
