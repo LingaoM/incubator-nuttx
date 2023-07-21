@@ -156,8 +156,8 @@ extern "C"
  *
  * Input Parameters:
  *   master - An instance of the lower half I3C core driver.
- *   bus - The I3C bus number.  This will be used as the I3C device minor
- *   number.  The I3C character device will be registered as /dev/i3cN
+ *   bus    - The I3C bus number.  This will be used as the I3C device minor
+ *   number.The I3C character device will be registered as /dev/i3cN
  *   where N is the minor number.
  *
  * Returned Value:

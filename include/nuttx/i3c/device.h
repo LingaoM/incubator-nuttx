@@ -261,8 +261,8 @@ struct i3c_ibi_setup
  *   This function can sleep and thus cannot be called in atomic context.
  *
  * Input Parameters:
- *   desc - An I3C device descriptor will be used for
- *   xfers - Array of transfers
+ *   desc   - An I3C device descriptor will be used for
+ *   xfers  - Array of transfers
  *   nxfers - Number of transfers
  *
  * Returned Value:
@@ -279,7 +279,7 @@ int i3c_device_do_priv_xfers(FAR const struct i3c_device *dev,
  *   get I3C device information, Retrieve I3C dev info.
  *
  * Input Parameters:
- *   dev - A device we want information on.
+ *   dev  - A device we want information on.
  *   info - The information object to fill in.
  *
  ****************************************************************************/
@@ -377,7 +377,7 @@ void i3c_device_free_ibi(FAR const struct i3c_device *dev);
  *
  * Input Parameters:
  *   master - The master used to get i3c_device on the bus
- *   id - An instance of i3c_device_id, include manufid,partid and so on.
+ *   id     - An instance of i3c_device_id, include manufid,partid and so on.
  * Returned Value:
  *   Struct i3c_device var in case of success, NULL otherwise.
  ****************************************************************************/

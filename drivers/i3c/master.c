@@ -1357,7 +1357,7 @@ void i3c_bus_normaluse_unlock(FAR struct i3c_bus *bus)
  *   This function must be called with the bus lock held in write mode.
  *
  * Input Parameters:
- *   master - I3C master object.
+ *   master     - I3C master object.
  *   start_addr - Where to start searching.
  *
  * Returned Value:
@@ -1428,8 +1428,8 @@ int i3c_master_do_daa(FAR struct i3c_master_controller *master)
  *
  * Input Parameters:
  *   master - Master used to send frames on the bus.
- *   addr - A valid I3C slave address or %I3C_BROADCAST_ADDR
- *   evts - Events to enable
+ *   addr   - A valid I3C slave address or %I3C_BROADCAST_ADDR
+ *   evts   - Events to enable
  *
  * Returned Value:
  *   0 in case of success, a positive I3C error code if the error is
@@ -1491,8 +1491,8 @@ int i3c_master_entdaa_locked(FAR struct i3c_master_controller *master)
  *
  * Input Parameters:
  *   master - Master used to send frames on the bus.
- *   addr - A valid I3C slave address or %I3C_BROADCAST_ADDR
- *   evts - Events to disable
+ *   addr   - A valid I3C slave address or %I3C_BROADCAST_ADDR
+ *   evts   - Events to disable
  *
  * Returned Value:
  *  0 in case of success, a positive I3C error code if the error is
@@ -1529,7 +1529,7 @@ int i3c_master_disec_locked(FAR struct i3c_master_controller *master,
  *
  * Input Parameters:
  *   master - Master used to send frames on the bus
- *   info -  I3C device information
+ *   info   - I3C device information
  *
  * Returned Value:
  *   0 if @info contains valid information (not every piece of
@@ -1600,7 +1600,7 @@ err_free_dev:
  *
  * Input Parameters:
  *   master - Master used to send frames on the bus
- *   addr - I3C slave dynamic address assigned to the device
+ *   addr   - I3C slave dynamic address assigned to the device
  *
  * Returned Value:
  *   A 0 in case of success, an negative error code otherwise.
@@ -1788,7 +1788,7 @@ err_free_dev:
  *   to the dev will be called from a workqueue context.
  *
  * Input Parameters:
- *   dev - The device this IBI is coming from
+ *   dev  - The device this IBI is coming from
  *   slot - The IBI slot used to store the payload
  *
  ****************************************************************************/
@@ -1967,7 +1967,7 @@ i3c_generic_ibi_get_free_slot(FAR struct i3c_generic_ibi_pool *pool)
  *
  * Input Parameters:
  *   pool - The pool to return the IBI slot to
- *   s - IBI slot to recycle
+ *   s    - IBI slot to recycle
  *
  ****************************************************************************/
 
@@ -2126,8 +2126,8 @@ void i3c_dev_free_ibi_locked(FAR struct i3c_dev_desc *dev)
  *    - registers the I2C charactor driver that supports I2C transfer.
  *
  * Input Parameters:
- *   master - Master used to send frames on the bus.
- *   ops    - The master controller operations
+ *   master    - Master used to send frames on the bus.
+ *   ops       - The master controller operations
  *   secondary - True if you are registering a secondary master. Will return
  *     -ENOTSUP if set to true since secondary masters are not yet supported
  *

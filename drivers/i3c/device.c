@@ -39,8 +39,8 @@
  *   This function can sleep and thus cannot be called in atomic context.
  *
  * Input Parameters:
- *   dev - Device with which the transfers should be done
- *   xfers - Array of transfers
+ *   dev    - Device with which the transfers should be done
+ *   xfers  - Array of transfers
  *   nxfers - Number of transfers
  *
  * Returned Value:
@@ -80,7 +80,7 @@ int i3c_device_do_priv_xfers(FAR const struct i3c_device *dev,
  *   Get I3C device information, Retrieve I3C dev info.
  *
  * Input Parameters:
- *   dev - Device we want information on.
+ *   dev  - Device we want information on.
  *   info - The information object to fill in.
  *
  ****************************************************************************/
@@ -252,8 +252,8 @@ void i3c_device_free_ibi(FAR const struct i3c_device *dev)
  *   and provisional ID.
  *
  * Input Parameters:
- *   master - the master used to get i3c_device on the bus
- *   id - An instance of i3c_device_id, include manufid,partid and so on.
+ *   master - The master used to get i3c_device on the bus
+ *   id     - An instance of i3c_device_id, include manufid,partid and so on.
  *
  * Returned Value:
  *   Struct i3c_device var in case of success, NULL otherwise.
