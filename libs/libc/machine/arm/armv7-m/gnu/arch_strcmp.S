@@ -29,6 +29,29 @@
  *
  ****************************************************************************/
 
+	.macro def_fn f p2align=0
+	.text
+	.p2align \p2align
+	.global \f
+	.type \f, %function
+\f:
+	.endm
+
+#ifdef __ARM_BIG_ENDIAN
+#define S2LO		lsl
+#define S2HI		lsr
+#define S2LOEQ		lsleq
+#define MSB		0x000000ff
+#define LSB		0xff000000
+#else /* not  __ARM_BIG_ENDIAN */
+#define S2LO		lsr
+#define S2HI		lsl
+#define S2LOEQ		lsreq
+#define MSB		0xff000000
+#define LSB		0x000000ff
+#endif
+
+
 /* Very similar to the generic code, but uses Thumb2 as implemented
    in ARMv7-M.  */
 
