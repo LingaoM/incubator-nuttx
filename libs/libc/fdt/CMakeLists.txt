@@ -30,6 +30,7 @@ if(CONFIG_LIBFDT)
       fdt.c
       fdt_ro.c
       fdt_wip.c
+      fdt_sw.c
       fdt_rw.c
       fdt_strerror.c
       fdt_empty_tree.c

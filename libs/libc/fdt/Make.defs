@@ -38,6 +38,7 @@ CSRCS += fdt.c
 CSRCS += fdt_ro.c
 CSRCS += fdt_wip.c
 CSRCS += fdt_sw.c
+CSRCS += fdt_rw.c
 CSRCS += fdt_strerror.c
 CSRCS += fdt_empty_tree.c
 CSRCS += fdt_addresses.c
