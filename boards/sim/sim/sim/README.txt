@@ -1091,7 +1091,7 @@ rpserver
     1>Build rpserver and backup the image:
       ./tools/configure.sh sim:rpserver
       make
-      cp nuttx ~/rpserver
+      cp nuttx ~/server
 
     2>Distclean the build environment:
       make distclean
@@ -1099,25 +1099,29 @@ rpserver
     3>Build rpproxy:
       ./tools/configure.sh sim:rpproxy
       make
-      cp nuttx ~/rpproxy
+      cp nuttx ~/proxy
 
   2.Test the Rpmsg driver
+
+    NOTES: In the current simulation environment, master will use
+           posix_spwan fork proxy process during the startup, so
+           it's no need to manually start the proxy.
+
     1>Rpmsg Syslog:
       Start rpserver:
 
-      $ sudo ~/rpserver
-      [    0.000000] server: SIM: Initializing
+      ~$ ./server
+      [    0.000000] [server] SIM: Initializing
 
-      NuttShell (NSH)
-      server>
+      NuttShell (NSH) NuttX-12.0.0-vela
+      server> [    0.000000] [proxy] SIM: Initializing
 
-      Start rpproxy:
+      server> cu
 
-      $ sudo ~/rpproxy
-
-      Check the syslog from rpproxy in rpserver terminal:
-
-      server> [    0.000000] proxy: SIM: Initializing
+      NuttShell (NSH) NuttX-12.0.0-vela
+      proxy>
+      proxy>
+      proxy>
 
     2>Rpmsg TTY(UART):
       Use cu switch the current CONSOLE to the proxy:
