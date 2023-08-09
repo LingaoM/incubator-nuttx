@@ -19,7 +19,7 @@
 # ##############################################################################
 if(CONFIG_LIBFDT)
 
-  set(VERSION 1.7.0)
+  set(VERSION CONFIG_DTC_VERSION)
 
   FetchContent_Declare(
     dtc URL https://github.com/dgibson/dtc/archive/v$(VERSION).zip)
