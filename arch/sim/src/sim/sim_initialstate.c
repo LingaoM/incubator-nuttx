@@ -39,7 +39,6 @@
  * Private Functions
  ****************************************************************************/
 
-#ifdef CONFIG_SIM_WALLTIME_SIGNAL
 static void pre_start(void)
 {
   struct tcb_s *tcb = this_task();
@@ -52,7 +51,6 @@ static void pre_start(void)
 
   tcb->start();
 }
-#endif
 
 /****************************************************************************
  * Public Functions
@@ -113,15 +111,11 @@ void up_initial_state(struct tcb_s *tcb)
 #endif
                                    + tcb->adj_stack_size;
 
-#ifdef CONFIG_SIM_WALLTIME_SIGNAL
   /* Mask the interrupt until switching to the new task */
 
   memset(&tcb->xcp.regs[JB_FLAG], 0xff, sizeof(xcpt_reg_t) * 2);
 
   tcb->xcp.regs[JB_PC] = (xcpt_reg_t)pre_start;
-#else
-  tcb->xcp.regs[JB_PC] = (xcpt_reg_t)tcb->start;
-#endif
 
 #ifdef CONFIG_SIM_ASAN
   __asan_unpoison_memory_region(tcb->stack_alloc_ptr, tcb->adj_stack_size);
