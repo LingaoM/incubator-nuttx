@@ -73,7 +73,7 @@ enum
 
 enum
 {
-    POWER_SUPPLY_STATUS_UNKNOWN = 0,
+    POWER_SUPPLY_STATUS_UNKNOWN,
     POWER_SUPPLY_STATUS_CHARGING,
     POWER_SUPPLY_STATUS_DISCHARGING,
     POWER_SUPPLY_STATUS_NOT_CHARGING,
@@ -138,7 +138,7 @@ static int goldfish_battery_state(FAR struct battery_gauge_dev_s *dev,
 {
   FAR struct goldfish_battery_data_s *priv =
       container_of(dev, struct goldfish_battery_data_s, battery);
-  uint32_t regval = 0;
+  uint32_t regval;
 
   regval = GOLDFISH_BATTERY_READ(priv, BATTERY_STATUS);
 
@@ -172,8 +172,8 @@ static int goldfish_battery_voltage(FAR struct battery_gauge_dev_s *dev,
 {
   FAR struct goldfish_battery_data_s *data =
       container_of(dev, struct goldfish_battery_data_s, battery);
-  uint32_t regval = 0;
-  float vol = 0.0f;
+  uint32_t regval;
+  float vol;
 
   /* BATTERY_VOLTAGE units is µV */
 
@@ -191,7 +191,7 @@ static int  goldfish_battery_capacity(FAR struct battery_gauge_dev_s *dev,
 {
   FAR struct goldfish_battery_data_s *data =
       container_of(dev, struct goldfish_battery_data_s, battery);
-  uint32_t regval = 0;
+  uint32_t regval;
 
   /* BATTERY_CAPACITY units is percentage */
 
@@ -205,8 +205,8 @@ static int goldfish_battery_current(FAR struct battery_gauge_dev_s *dev,
 {
   FAR struct goldfish_battery_data_s *data =
       container_of(dev, struct goldfish_battery_data_s, battery);
-  uint32_t regval = 0;
-  float current = 0.0f;
+  uint32_t regval;
+  float current;
 
   /* BATTERY_CURRENT_NOW units is µA */
 
@@ -224,8 +224,8 @@ static int goldfish_battery_temp(FAR struct battery_gauge_dev_s *dev,
 {
   FAR struct goldfish_battery_data_s *data =
       container_of(dev, struct goldfish_battery_data_s, battery);
-  int32_t regval = 0;
-  float temp = 0.0f;
+  int32_t regval;
+  float temp;
 
   /* BATTERY_TEMP units is 0.1 celsuis */
 
@@ -244,7 +244,7 @@ static void goldfish_battery_work(FAR void *arg)
   uint32_t mask = BATTERY_STATE_CHANGED | BATTERY_VOLTAGE_CHANGED |
                   BATTERY_CURRENT_CHANGED | BATTERY_CAPACITY_CHANGED |
                   BATTERY_TEMPERATURE_CHANGED | BATTERY_ONLINE_CHANGED;
-  int ret = 0;
+  int ret;
 
   ret = battery_gauge_changed(&data->battery, mask);
   if (ret < 0)
@@ -259,7 +259,7 @@ static int goldfish_battery_interrupt(int irq, FAR void *context, void *arg)
 {
   FAR struct goldfish_battery_data_s *data = arg;
   uint32_t status;
-  int ret = 0;
+  int ret;
 
   /* read status flags, which will clear the interrupt */
 
@@ -286,7 +286,7 @@ static int goldfish_battery_interrupt(int irq, FAR void *context, void *arg)
 int goldfish_battery_register(FAR void *regs, int irq)
 {
   int ret;
-  FAR struct goldfish_battery_data_s *data = NULL;
+  FAR struct goldfish_battery_data_s *data;
 
   if (NULL == regs || irq < 0)
     {
@@ -307,7 +307,7 @@ int goldfish_battery_register(FAR void *regs, int irq)
   if (ret < 0)
     {
       baterr(" attach irq %d failed\n", irq);
-      return ret;
+      goto fail;
     }
 
   data->battery.ops = &g_goldfish_gauge_ops;
@@ -315,12 +315,16 @@ int goldfish_battery_register(FAR void *regs, int irq)
   if (ret < 0)
     {
       baterr("battery_gauge_register %s failed", GOLDFISH_GAUGE);
-      return ret;
+      irq_detach(data->irq);
+      goto fail;
     }
 
   GOLDFISH_BATTERY_WRITE(data, BATTERY_INT_ENABLE, BATTERY_INT_MASK);
   up_enable_irq(data->irq);
   batinfo("goldfish_battery_register over");
   return 0;
+fail:
+  kmm_free(data);
+  return ret;
 }
 
