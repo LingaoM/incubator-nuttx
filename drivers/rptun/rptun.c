@@ -315,13 +315,11 @@ static void rptun_worker(FAR void *arg)
 {
   FAR struct rptun_priv_s *priv = arg;
   unsigned long cmd = priv->cmd;
-  bool first = false;
 
   priv->cmd = RPTUNIOC_NONE;
   switch (cmd)
     {
       case RPTUNIOC_START:
-        first = true;
         if (priv->rproc.state == RPROC_OFFLINE)
           {
             rptun_dev_start(&priv->rproc);
@@ -341,7 +339,7 @@ static void rptun_worker(FAR void *arg)
         break;
     }
 
-  if (first || rptun_available_rx(priv))
+  if (rptun_available_rx(priv))
     {
       remoteproc_get_notification(&priv->rproc, RPTUN_NOTIFY_ALL);
     }
