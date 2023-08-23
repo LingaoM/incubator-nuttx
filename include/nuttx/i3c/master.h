@@ -457,6 +457,8 @@ struct i3c_bus
  *        This method is mandatory.
  * @priv_xfers: do one or several private I3C SDR transfers
  *        This method is mandatory.
+ * @attach_i2c_dev: called every time an I2C device is attached to the bus.
+ * @detach_i2c_dev: called when an I2C device is detached from the bus.
  * @i2c_xfers: do one or several I2C transfers. Note that, unlike i3c
  *        transfers, the core does not guarantee that buffers attached to
  *        the transfers are DMA-safe. If drivers want to have DMA-safe
@@ -508,6 +510,8 @@ struct i3c_master_controller_ops
   CODE int (*priv_xfers)(FAR struct i3c_dev_desc *dev,
         FAR struct i3c_priv_xfer *xfers,
         int nxfers);
+  CODE int (*attach_i2c_dev)(FAR const struct i2c_config_s *config);
+  CODE int (*detach_i2c_dev)(FAR const struct i2c_config_s *config);
   CODE int (*i2c_xfers)(FAR struct i3c_master_controller *master,
        FAR const struct i2c_msg_s *xfers, int nxfers);
   CODE int (*request_ibi)(FAR struct i3c_dev_desc *dev,

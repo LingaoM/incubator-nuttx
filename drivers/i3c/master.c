@@ -2114,6 +2114,40 @@ void i3c_dev_free_ibi_locked(FAR struct i3c_dev_desc *dev)
   dev->ibi = NULL;
 }
 
+int i3c_master_i2c_attach(FAR struct i3c_master_controller *master,
+                          FAR struct i2c_config_s *config)
+{
+  int ret;
+
+  i3c_bus_normaluse_lock(&master->bus);
+
+  if (master->ops->attach_i2c_dev)
+    {
+      ret = master->ops->attach_i2c_dev(config);
+      if (ret < 0)
+        {
+          return ret;
+        }
+    }
+
+  i3c_bus_normaluse_unlock(&master->bus);
+
+  return 0;
+}
+
+void i3c_master_detach_i2c_dev(FAR struct i3c_master_controller *master,
+                               FAR struct i2c_config_s *config)
+{
+  i3c_bus_normaluse_lock(&master->bus);
+
+  if (master->ops->detach_i2c_dev)
+    {
+      master->ops->detach_i2c_dev(config);
+    }
+
+  i3c_bus_normaluse_unlock(&master->bus);
+}
+
 /****************************************************************************
  * Name: i3c_master_register()
  *

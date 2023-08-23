@@ -369,6 +369,37 @@ int i3c_device_request_ibi(FAR const struct i3c_device *dev,
 void i3c_device_free_ibi(FAR const struct i3c_device *dev);
 
 /****************************************************************************
+ * Name: i3c_master_i2c_attach
+ *
+ * Description:
+ *   Config an i2c device address to controller driver.
+ *
+ * Input Parameters:
+ *   master - The master used to get i3c_device on the bus
+ *   config - An i2c device information to add
+ *
+ * Returned Value:
+ *  Return 0 if success, otherwise a negative number.
+ ****************************************************************************/
+
+int i3c_master_i2c_attach(FAR struct i3c_master_controller *master,
+                          FAR struct i2c_config_s *config);
+
+/****************************************************************************
+ * Name: i3c_master_detach_i2c_dev
+ *
+ * Description:
+ *   Delete an i2c device address in controller driver. .
+ *
+ * Input Parameters:
+ *   master - The master used to get i3c_device on the bus
+ *   config - An i2c device information to delete
+ ****************************************************************************/
+
+void i3c_master_detach_i2c_dev(FAR struct i3c_master_controller *master,
+                               FAR struct i2c_config_s *config);
+
+/****************************************************************************
  * Name: i3c_master_find_i3c_dev()
  *
  * Description:
