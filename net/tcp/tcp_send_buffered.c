@@ -1662,7 +1662,7 @@ int psock_tcp_cansend(FAR struct tcp_conn_s *conn)
 
   if (!_SS_ISCONNECTED(conn->sconn.s_flags))
     {
-      nerr("ERROR: Not connected\n");
+      nwarn("WARNING: Not connected\n");
       return -ENOTCONN;
     }
 
