@@ -243,7 +243,7 @@ static void ramlog_initbuf(void)
 #ifdef CONFIG_BOARDCTL_RESET_CAUSE
   memset(&cause, 0, sizeof(cause));
   ret = boardctl(BOARDIOC_RESET_CAUSE, (uintptr_t)&cause);
-  if (ret >= 0 && !cause.cause && !cause.flag)
+  if (ret >= 0 && cause.cause == BOARDIOC_RESETCAUSE_SYS_CHIPPOR)
     {
       memset(priv->rl_buffer, 0, priv->rl_bufsize);
       priv->rl_head = priv->rl_tail = 0;

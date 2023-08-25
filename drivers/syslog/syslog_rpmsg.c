@@ -405,7 +405,7 @@ void syslog_rpmsg_init_early(FAR void *buffer, size_t size)
 #ifdef CONFIG_BOARDCTL_RESET_CAUSE
   memset(&cause, 0, sizeof(cause));
   ret = boardctl(BOARDIOC_RESET_CAUSE, (uintptr_t)&cause);
-  if (ret >= 0 && !cause.cause && !cause.flag)
+  if (ret >= 0 && cause.cause == BOARDIOC_RESETCAUSE_SYS_CHIPPOR)
     {
       memset(buffer, 0, size);
       return;
