@@ -722,8 +722,10 @@ static int rpmsg_socket_connect_internal(FAR struct socket *psock)
       return ret;
     }
 
+  nxmutex_lock(&conn->recvlock);
   if (conn->sendsize == 0)
     {
+      nxmutex_unlock(&conn->recvlock);
       if (_SS_ISNONBLOCK(conn->sconn.s_flags))
         {
           return -EINPROGRESS;
@@ -740,6 +742,10 @@ static int rpmsg_socket_connect_internal(FAR struct socket *psock)
                                     NULL,
                                     NULL);
         }
+    }
+  else
+    {
+      nxmutex_unlock(&conn->recvlock);
     }
 
   return ret;
