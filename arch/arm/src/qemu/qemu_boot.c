@@ -52,7 +52,7 @@ void arm_boot(void)
   qemu_setupmappings();
 
 #if defined(CONFIG_ARCH_HAVE_PSCI)
-  arm_psci_init("smc");
+  arm_psci_init("hvc");
 #endif
 
 #ifdef CONFIG_DEVICE_TREE
