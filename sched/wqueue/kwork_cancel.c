@@ -51,8 +51,8 @@
  * Input Parameters:
  *   wqueue  - The work queue to use.  Must be HPWORK or LPWORK
  *   nthread - The number of threads in the work queue
-               > 0 unsynchronous cancel
-               < 0 synchronous cancel
+ *             > 0 unsynchronous cancel
+ *             < 0 synchronous cancel
  *   work    - The previously queued work structure to cancel
  *
  * Returned Value:
@@ -102,14 +102,14 @@ static int work_qcancel(FAR struct kwork_wqueue_s *wqueue, int nthread,
 
       for (wndx = 0; wndx < nthread; wndx++)
         {
-          if (wqueue->worker[wndx].work == work)
+          if (wqueue->worker[wndx].work == work &&
+              wqueue->worker[wndx].pid != _SCHED_GETTID())
             {
               nxsem_wait_uninterruptible(&wqueue->worker[wndx].wait);
               ret = OK;
               break;
             }
         }
-
     }
 
   leave_critical_section(flags);
