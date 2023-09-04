@@ -46,13 +46,14 @@
 
     .text
     .syntax unified
+
     .global arm_smccc_smc
     .type   arm_smccc_smc, function
 arm_smccc_smc:
     mov     r12, sp
     push    {r4-r7}
     ldm     r12, {r4-r7}
-    .word   0xe1600070
+    smc     #0
     pop     {r4-r7}
     ldr     r12, [sp, #(4 * 4)]
     stm     r12, {r0-r3}
@@ -68,7 +69,7 @@ arm_smccc_hvc:
     mov     r12, sp
     push    {r4-r7}
     ldm     r12, {r4-r7}
-    .word   0xe1400070
+    hvc     #0
     pop     {r4-r7}
     ldr     r12, [sp, #(4 * 4)]
     stm     r12, {r0-r3}
