@@ -466,6 +466,7 @@ static int binder_poll(FAR struct file *filp,
     {
       binder_debug(BINDER_DEBUG_SCHED, "%d:%d poll finish\n",
                    proc->pid, thread->tid);
+      list_delete_init(&thread->waiting_thread_node);
       finish_wait(&thread->wq_entry);
     }
 
