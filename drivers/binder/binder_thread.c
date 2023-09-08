@@ -1161,11 +1161,17 @@ retry:
       binder_set_priority(thread, &proc->default_priority);
     }
 
-  /* ignore non_block since the -EAGAIN error handling in
-   * libbinder is not completed.
-   */
-
-  ret = binder_wait_for_work(thread, wait_for_proc_work);
+  if (non_block)
+    {
+      if (!binder_has_work(thread, wait_for_proc_work))
+        {
+          ret = -EAGAIN;
+        }
+    }
+  else
+    {
+      ret = binder_wait_for_work(thread, wait_for_proc_work);
+    }
 
   thread->looper &= ~BINDER_LOOPER_STATE_WAITING;
 
