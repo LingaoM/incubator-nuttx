@@ -161,21 +161,24 @@ static FAR const char *g_pm_state[PM_COUNT] =
  * Private Functions
  ****************************************************************************/
 
+/****************************************************************************
+ * Name: pm_path_validate
+ ****************************************************************************/
+
 static int pm_path_validate(FAR const char *relpath)
 {
-  int index = -1;
+  int i;
 
-  for (int i = 0; i < nitems(g_pm_files); i++)
+  for (i = 0; i < nitems(g_pm_files); i++)
     {
       if (strncmp(relpath, g_pm_files[i].name,
                   strlen(g_pm_files[i].name)) == 0)
         {
-          index = i;
-          break;
+          return i;
         }
     }
 
-  return index;
+  return -1;
 }
 
 /****************************************************************************
@@ -200,6 +203,12 @@ static int pm_open(FAR struct file *filep, FAR const char *relpath,
       return -EACCES;
     }
 
+  relpath += strlen("pm/");
+  if (pm_path_validate(relpath) < 0)
+    {
+      return -ENOENT;
+    }
+
   /* Allocate a container to hold the file attributes */
 
   pmfile = kmm_zalloc(sizeof(struct pm_file_s));
@@ -207,12 +216,6 @@ static int pm_open(FAR struct file *filep, FAR const char *relpath,
     {
       ferr("ERROR: Failed to allocate file attributes\n");
       return -ENOMEM;
-    }
-
-  relpath += strlen("pm/");
-  if (pm_path_validate(relpath) < 0)
-    {
-      return -ENOENT;
     }
 
   for (i = 0; i < nitems(g_pm_files); i++)
