@@ -127,6 +127,7 @@ struct mmcsd_state_s
   uint8_t type:4;                  /* Card type (See MMCSD_CARDTYPE_* definitions) */
   uint8_t buswidth:4;              /* Bus widths supported (SD only) */
   sdio_capset_t caps;              /* SDIO driver capabilities/limitations */
+  uint32_t cid[4];                 /* CID register */
   uint16_t selblocklen;            /* The currently selected block length */
   uint16_t rca;                    /* Relative Card Address (RCS) register */
 
@@ -2554,7 +2555,6 @@ static int mmcsd_widebus(FAR struct mmcsd_state_s *priv)
 #ifdef CONFIG_MMCSD_MMCSUPPORT
 static int mmcsd_mmcinitialize(FAR struct mmcsd_state_s *priv)
 {
-  uint32_t cid[4];
   uint32_t csd[4];
   int ret;
 
@@ -2572,14 +2572,14 @@ static int mmcsd_mmcinitialize(FAR struct mmcsd_state_s *priv)
    */
 
   mmcsd_sendcmdpoll(priv, MMCSD_CMD2, 0);
-  ret = SDIO_RECVR2(priv->dev, MMCSD_CMD2, cid);
+  ret = SDIO_RECVR2(priv->dev, MMCSD_CMD2, priv->cid);
   if (ret != OK)
     {
       ferr("ERROR: SDIO_RECVR2 for MMC CID failed: %d\n", ret);
       return ret;
     }
 
-  mmcsd_decode_cid(priv, cid);
+  mmcsd_decode_cid(priv, priv->cid);
 
   /* Send CMD3, SET_RELATIVE_ADDR.  This command is used to assign a logical
    * address to the card.  For MMC, the host assigns the address. CMD3 causes
@@ -3067,45 +3067,52 @@ static int mmcsd_general_cmd_read(FAR struct mmcsd_state_s *priv,
 static int mmcsd_iocmd(FAR struct mmcsd_state_s *priv,
                        FAR struct mmc_ioc_cmd *ic_ptr)
 {
+  uint32_t opcode;
   int ret;
+
   DEBUGASSERT(priv != NULL && ic_ptr != NULL);
 
-  if (!ic_ptr->is_acmd)
+  opcode = ic_ptr->opcode & MMCSD_CMDIDX_MASK;
+  switch (opcode)
     {
-    uint32_t opcode = ic_ptr->opcode & MMCSD_CMDIDX_MASK;
-    switch (opcode)
+    case MMCSD_CMDIDX2:
       {
-      case MMCSD_CMDIDX56: /* support general commands */
-        {
-          if (ic_ptr->write_flag)
-            {
-              ret = mmcsd_general_cmd_write(priv,
+        memcpy((FAR void *)(uintptr_t)ic_ptr->data_ptr,
+               priv->cid, sizeof(priv->cid));
+      }
+      break;
+    case MMCSD_CMDIDX56: /* support general commands */
+      {
+        if (ic_ptr->write_flag)
+          {
+            ret = mmcsd_general_cmd_write(priv,
                     (FAR uint8_t *)(uintptr_t)(ic_ptr->data_ptr),
                     ic_ptr->arg);
-              if (ret != OK)
-                {
-                  ferr("mmcsd_iocmd MMCSD_CMDIDX56 write failed.\n");
-                  return ret;
-                }
-            }
-          else
-            {
-              ret = mmcsd_general_cmd_read(priv,
+            if (ret != OK)
+              {
+                ferr("mmcsd_iocmd MMCSD_CMDIDX56 write failed.\n");
+                return ret;
+              }
+          }
+        else
+          {
+            ret = mmcsd_general_cmd_read(priv,
                     (FAR uint8_t *)(uintptr_t)(ic_ptr->data_ptr),
                     ic_ptr->arg);
-              if (ret != OK)
-                {
-                  ferr("mmcsd_iocmd MMCSD_CMDIDX56 read failed.\n");
-                  return ret;
-                }
-            }
-        }
-        break;
-      default:
+            if (ret != OK)
+              {
+                ferr("mmcsd_iocmd MMCSD_CMDIDX56 read failed.\n");
+                return ret;
+              }
+          }
+      }
+      break;
+    default:
+      {
         ferr("mmcsd_iocmd opcode unsupported.\n");
         return -EINVAL;
-        break;
       }
+      break;
     }
 
   return OK;
