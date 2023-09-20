@@ -57,6 +57,7 @@ include note/Make.defs
 include pipes/Make.defs
 include power/Make.defs
 include regmap/Make.defs
+include pinctrl/Make.defs
 include rptun/Make.defs
 include sensors/Make.defs
 include serial/Make.defs
