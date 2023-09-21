@@ -356,7 +356,7 @@
 "wcsnrtombs","wchar.h","","size_t","FAR char *","FAR const wchar_t **","size_t","size_t","FAR mbstate_t *"
 "wcspbrk","wchar.h","","FAR wchar_t *","FAR const wchar_t *","FAR const wchar_t *"
 "wcsrchr","wchar.h","","FAR wchar_t *","FAR const wchar_t *","wchar_t"
-"wcsspn","wchar.h","","size_t",FAR const wchar_t *","FAR const wchar_t *"
+"wcsspn","wchar.h","","size_t","FAR const wchar_t *","FAR const wchar_t *"
 "wcsstr","wchar.h","","FAR wchar_t *","FAR const wchar_t *","FAR const wchar_t *"
 "wcsrtombs","wchar.h","","size_t","FAR char *","FAR const wchar_t **","size_t","FAR mbstate_t *"
 "wcstod","wchar.h","","double","FAR const wchar_t *","FAR wchar_t **"
