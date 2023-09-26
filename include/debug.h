@@ -34,6 +34,9 @@
 #ifdef CONFIG_ARCH_CHIP_DEBUG_H
 #  include <arch/chip/debug.h>
 #endif
+#ifdef CONFIG_ARCH_BOARD_DEBUG_H
+#  include <arch/board/debug.h>
+#endif
 
 #include <syslog.h>
 #include <sys/uio.h>
@@ -78,7 +81,8 @@
  *    really intended only for crash error reporting.
  */
 
-#if !defined(EXTRA_FMT) && !defined(EXTRA_ARG) && defined(CONFIG_HAVE_FUNCTIONNAME)
+#if !defined(EXTRA_FMT) && !defined(EXTRA_ARG) && \
+    defined(CONFIG_HAVE_FUNCTIONNAME) && !defined(CONFIG_DEFAULT_SMALL)
 #  define EXTRA_FMT "%s: "
 #  define EXTRA_ARG ,__FUNCTION__
 #endif
@@ -682,6 +686,24 @@
 #  define regmapinfo     _none
 #endif
 
+#ifdef CONFIG_DEBUG_RMT_ERROR
+#  define rmterr        _err
+#else
+#  define rmterr       _none
+#endif
+
+#ifdef CONFIG_DEBUG_RMT_WARN
+#  define rmtwarn      _warn
+#else
+#  define rmtwarn      _none
+#endif
+
+#ifdef CONFIG_DEBUG_RMT_INFO
+#  define rmtinfo      _info
+#else
+#  define rmtinfo      _none
+#endif
+
 #ifdef CONFIG_DEBUG_RTC_ERROR
 #  define rtcerr       _err
 #else
@@ -878,6 +900,24 @@
 #  define rstinfo     _info
 #else
 #  define rstinfo     _none
+#endif
+
+#ifdef CONFIG_DEBUG_IPC_ERROR
+#  define ipcerr       _err
+#else
+#  define ipcerr      _none
+#endif
+
+#ifdef CONFIG_DEBUG_IPC_WARN
+#  define ipcwarn     _warn
+#else
+#  define ipcwarn     _none
+#endif
+
+#ifdef CONFIG_DEBUG_IPC_INFO
+#  define ipcinfo     _info
+#else
+#  define ipcinfo     _none
 #endif
 
 /* Buffer dumping macros do not depend on varargs */

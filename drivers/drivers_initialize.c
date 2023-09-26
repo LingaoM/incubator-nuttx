@@ -43,12 +43,12 @@
 #include <nuttx/sensors/sensor.h>
 #include <nuttx/serial/pty.h>
 #include <nuttx/serial/uart_ram.h>
+#include <nuttx/sysevent/sysevent_dev.h>
 #include <nuttx/syslog/syslog.h>
 #include <nuttx/syslog/syslog_console.h>
 #include <nuttx/trace.h>
 #include <nuttx/usrsock/usrsock_rpmsg.h>
 #include <nuttx/virtio/virtio.h>
-#include <nuttx/sysevent/sysevent_dev.h>
 
 /****************************************************************************
  * Public Functions

@@ -1043,7 +1043,8 @@ static void sensor_notify_event(FAR void *priv)
  * Input Parameters:
  *   in    - A pointer to input data need remap.
  *   out   - A pointer to output data.
- *   place - The place position of sensor on board.
+ *   place - The place position of sensor on board,
+ *           ex:SENSOR_BODY_COORDINATE_PX
  *
  ****************************************************************************/
 

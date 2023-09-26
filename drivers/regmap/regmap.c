@@ -50,13 +50,13 @@ static void regmap_lock_unlock_none(FAR void *context)
 static void regmap_lock_mutex(FAR void *context)
 {
   FAR struct regmap_s *map = context;
-  nxmutex_lock(&map->mutex);
+  nxmutex_lock(&map->mutex[0]);
 }
 
 static void regmap_unlock_mutex(FAR void *context)
 {
   FAR struct regmap_s *map = context;
-  nxmutex_unlock(&map->mutex);
+  nxmutex_unlock(&map->mutex[0]);
 }
 
 /****************************************************************************
@@ -96,20 +96,26 @@ FAR struct regmap_s *regmap_init(FAR struct regmap_bus_s *bus,
       return NULL;
     }
 
-  map = kmm_zalloc(sizeof(*map));
-  if (map == NULL)
-    {
-      return NULL;
-    }
-
   if (config->disable_locking)
     {
+      map = kmm_zalloc(sizeof(*map));
+      if (map == NULL)
+        {
+          return NULL;
+        }
+
       map->lock   = regmap_lock_unlock_none;
       map->unlock = regmap_lock_unlock_none;
     }
   else
     {
-      nxmutex_init(&map->mutex);
+      map = kmm_zalloc(sizeof(*map) + sizeof(mutex_t));
+      if (map == NULL)
+        {
+          return NULL;
+        }
+
+      nxmutex_init(&map->mutex[0]);
       map->lock   = regmap_lock_mutex;
       map->unlock = regmap_unlock_mutex;
     }
@@ -198,9 +204,9 @@ int regmap_bulk_write(FAR struct regmap_s *map, unsigned int reg,
                       FAR const void *val, unsigned int val_count)
 {
   size_t val_bytes = map->val_bytes;
+  int ret = -ENOSYS;
   unsigned int ival;
   FAR uint8_t *ptr;
-  int ret = 0;
   int i;
 
   DEBUGASSERT(REGMAP_ALIGNED(reg, map->reg_stride));
@@ -227,6 +233,7 @@ int regmap_bulk_write(FAR struct regmap_s *map, unsigned int reg,
             ival = *(FAR uint32_t *)ptr;
             break;
           default:
+            ret = -EINVAL;
             goto out;
         }
 
@@ -306,23 +313,19 @@ int regmap_bulk_read(FAR struct regmap_s *map, unsigned int reg,
   FAR uint16_t *u16 = val;
   FAR uint8_t  *u8  = val;
   unsigned int ival;
-  int ret = 0;
+  int ret = -ENOSYS;
   int i;
 
   DEBUGASSERT(REGMAP_ALIGNED(reg, map->reg_stride));
 
+  map->lock(map);
+
   if (map->read != NULL)
     {
-      map->lock(map);
-
       ret = map->read(map->bus, &reg, map->reg_bytes, val, val_count);
-
-      map->unlock(map);
     }
   else
     {
-      map->lock(map);
-
       for (i = 0; i < val_count; i++)
         {
           ret = map->reg_read(map->bus, reg + (i * map->reg_stride), &ival);
@@ -347,9 +350,9 @@ int regmap_bulk_read(FAR struct regmap_s *map, unsigned int reg,
                 return -EINVAL;
             }
         }
-
-      map->unlock(map);
     }
+
+  map->unlock(map);
 
   return ret;
 }
@@ -371,7 +374,7 @@ void regmap_exit(FAR struct regmap_s *map)
 {
   if (!map->disable_locking)
     {
-      nxmutex_destroy(&map->mutex);
+      nxmutex_destroy(&map->mutex[0]);
     }
 
   kmm_free(map->bus);

@@ -197,6 +197,7 @@ extern const struct mountpt_operations g_rpmsgfs_operations;
 #ifdef CONFIG_FS_ZIPFS
 extern const struct mountpt_operations g_zipfs_operations;
 #endif
+
 static const struct fsmap_t g_nonbdfsmap[] =
 {
 #ifdef CONFIG_FS_NXFFS

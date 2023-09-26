@@ -141,6 +141,7 @@ regmap_init_i2c(FAR struct i2c_master_s *i2c,
                 FAR const struct regmap_config_s *config)
 {
   FAR struct regmap_bus_i2c_s *dev;
+  FAR struct regmap_s *regmap;
 
   dev = kmm_zalloc(sizeof(struct regmap_bus_i2c_s));
   if (dev == NULL)
@@ -159,5 +160,11 @@ regmap_init_i2c(FAR struct i2c_master_s *i2c,
 
   dev->i2c = i2c;
 
-  return regmap_init(&dev->base, config);
+  regmap = regmap_init(&dev->base, config);
+  if (regmap == NULL)
+    {
+      kmm_free(dev);
+    }
+
+  return regmap;
 }
