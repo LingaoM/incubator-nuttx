@@ -776,7 +776,7 @@ static ssize_t proc_critmon(FAR struct proc_file_s *procfile,
 
   if (tcb->premp_max > 0)
     {
-      up_perf_convert(tcb->premp_max, &maxtime);
+      perf_convert(tcb->premp_max, &maxtime);
     }
   else
     {
@@ -809,7 +809,7 @@ static ssize_t proc_critmon(FAR struct proc_file_s *procfile,
 
   if (tcb->crit_max > 0)
     {
-      up_perf_convert(tcb->crit_max, &maxtime);
+      perf_convert(tcb->crit_max, &maxtime);
     }
   else
     {
@@ -842,7 +842,7 @@ static ssize_t proc_critmon(FAR struct proc_file_s *procfile,
 
   if (tcb->run_max > 0)
     {
-      up_perf_convert(tcb->run_max, &maxtime);
+      perf_convert(tcb->run_max, &maxtime);
     }
   else
     {
@@ -853,7 +853,7 @@ static ssize_t proc_critmon(FAR struct proc_file_s *procfile,
   /* Reset the maximum */
 
   tcb->run_max = 0;
-  up_perf_convert(tcb->run_time, &runtime);
+  perf_convert(tcb->run_time, &runtime);
 
   /* Output the maximum time the thread has run and
    * the total time the thread has run
