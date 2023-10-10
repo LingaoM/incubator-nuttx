@@ -44,6 +44,10 @@
 
 #define PMCNTENCLR_EL0_C         (1ul << 31)  /* PMCCNTR_EL0 disable bit */
 
+/* PMINTENCLR_EL1 */
+
+#define PMINTENCLR_EL1_C         (1ul << 31)  /* PMCCNTR_EL0 overflow interrupt request disable bit */
+
 /* PMCNTENSET_EL0 */
 
 #define PMCNTENSET_EL0_C         (1ul << 31)  /* Enables the cycle counter register */

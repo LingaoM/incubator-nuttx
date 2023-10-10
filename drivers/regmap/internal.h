@@ -45,8 +45,6 @@ typedef CODE void (*regmap_unlock_t)(FAR void *);
 
 struct regmap_s
 {
-  mutex_t mutex;
-
   regmap_lock_t lock;
   regmap_unlock_t unlock;
 
@@ -80,6 +78,10 @@ struct regmap_s
    */
 
   int reg_stride;
+
+  /* Prevent fragmentation */
+
+  mutex_t mutex[0];
 };
 
 #endif /* __DRIVERS_REGMAP_INTERNAL_H */

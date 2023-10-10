@@ -74,7 +74,7 @@ struct rptun_priv_s
   struct work_s                work;
 #else
   sem_t                        semrx;
-  int                          tid;
+  pid_t                        tid;
 #endif
 #ifdef CONFIG_RPTUN_PM
   struct pm_wakelock_s         wakelock;
@@ -237,7 +237,8 @@ static void rptun_pm_callback(wdparm_t arg)
 }
 #endif
 
-static inline void rptun_pm_action(FAR struct rptun_priv_s *priv, bool stay)
+static inline void rptun_pm_action(FAR struct rptun_priv_s *priv,
+                                   bool stay)
 {
   irqstate_t flags;
   int count;
@@ -1100,7 +1101,7 @@ int rpmsg_wait(FAR struct rpmsg_endpoint *ept, FAR sem_t *sem)
   FAR struct rptun_priv_s *priv;
   int ret;
 
-  if (!ept)
+  if (!ept || !sem)
     {
       return -EINVAL;
     }
@@ -1132,7 +1133,7 @@ int rpmsg_post(FAR struct rpmsg_endpoint *ept, FAR sem_t *sem)
   int semcount;
   int ret;
 
-  if (!ept)
+  if (!ept || !sem)
     {
       return -EINVAL;
     }

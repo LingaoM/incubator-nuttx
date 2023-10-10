@@ -175,6 +175,7 @@ regmap_init_spi(FAR struct spi_dev_s *spi, uint32_t freq,
                 FAR const struct regmap_config_s *config)
 {
   FAR struct regmap_bus_spi_s *dev;
+  FAR struct regmap_s *regmap;
 
   dev = kmm_zalloc(sizeof(struct regmap_bus_spi_s));
   if (dev == NULL)
@@ -196,5 +197,11 @@ regmap_init_spi(FAR struct spi_dev_s *spi, uint32_t freq,
   dev->seq.trans      = &dev->trans; /* Init spi_sequence_s trans. */
   dev->spi            = spi;
 
-  return regmap_init(&dev->base, config);
+  regmap = regmap_init(&dev->base, config);
+  if (regmap == NULL)
+    {
+      kmm_free(dev);
+    }
+
+  return regmap;
 }

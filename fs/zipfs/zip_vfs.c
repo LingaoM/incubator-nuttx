@@ -56,7 +56,7 @@ struct zipfs_file_s
 {
   unzFile uf;
   mutex_t lock;
-  char *seekbuf;
+  FAR char *seekbuf;
   char relpath[1];
 };
 
@@ -64,8 +64,9 @@ struct zipfs_file_s
  * Private Function Prototypes
  ****************************************************************************/
 
-static voidpf zipfs_real_open(voidpf opaque, const void *filename, int mode);
-static uLong zipfs_real_read(voidpf opaque, voidpf stream, void *buf,
+static voidpf zipfs_real_open(voidpf opaque, FAR const void *filename,
+                              int mode);
+static uLong zipfs_real_read(voidpf opaque, voidpf stream, FAR void *buf,
                              uLong size);
 static long zipfs_real_seek(voidpf opaque, voidpf stream, ZPOS64_T offset,
                             int origin);
@@ -160,7 +161,8 @@ const struct mountpt_operations g_zipfs_operations =
  * Private Functions
  ****************************************************************************/
 
-static voidpf zipfs_real_open(voidpf opaque, const void *filename, int mode)
+static voidpf zipfs_real_open(voidpf opaque, FAR const void *filename,
+                              int mode)
 {
   FAR struct file *filep;
   int ret;
@@ -181,8 +183,8 @@ static voidpf zipfs_real_open(voidpf opaque, const void *filename, int mode)
   return filep;
 }
 
-static uLong zipfs_real_read(voidpf opaque, voidpf stream, void *buf,
-                             uLong size)
+static uLong zipfs_real_read(voidpf opaque, voidpf stream,
+                             FAR void *buf, uLong size)
 {
   return file_read(stream, buf, size);
 }
@@ -322,7 +324,7 @@ static ssize_t zipfs_read(FAR struct file *filep, FAR char *buffer,
   return ret;
 }
 
-static off_t zipfs_skip(struct zipfs_file_s *fp, off_t amount)
+static off_t zipfs_skip(FAR struct zipfs_file_s *fp, off_t amount)
 {
   off_t next = 0;
 
