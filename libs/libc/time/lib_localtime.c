@@ -2193,7 +2193,7 @@ static FAR struct tm *timesub(FAR const time_t *timep,
     }
   else
     {
-      errno = EOVERFLOW;
+      set_errno(EOVERFLOW);
       return NULL;
     }
 
