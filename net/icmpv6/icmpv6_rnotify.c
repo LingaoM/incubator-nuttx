@@ -122,7 +122,7 @@ void icmpv6_setaddresses(FAR struct net_driver_s *dev,
       curaddr = addr;
     }
 
-  for (i = 0; i < 7; i++)
+  for (i = 0; i < 8; i++)
     {
       addr[i] = (curaddr[i] & ~mask[i]) | (prefix[i] & mask[i]);
     }
