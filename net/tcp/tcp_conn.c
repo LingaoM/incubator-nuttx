@@ -49,7 +49,6 @@
 #include <assert.h>
 #include <errno.h>
 #include <debug.h>
-#include <sys/random.h>
 
 #include <netinet/in.h>
 
@@ -70,6 +69,7 @@
 #include "icmpv6/icmpv6.h"
 #include "nat/nat.h"
 #include "netdev/netdev.h"
+#include "utils/utils.h"
 
 /****************************************************************************
  * Private Data
@@ -578,31 +578,16 @@ int tcp_selectport(uint8_t domain,
                    uint16_t portno)
 {
   static uint16_t g_last_tcp_port;
-  ssize_t ret;
 
   /* Generate port base dynamically */
 
   if (g_last_tcp_port == 0)
     {
-      ret = getrandom(&g_last_tcp_port, sizeof(uint16_t), 0);
-      if (ret < 0)
-        {
-          ret = getrandom(&g_last_tcp_port, sizeof(uint16_t), GRND_RANDOM);
-        }
+      net_getrandom(&g_last_tcp_port, sizeof(uint16_t));
 
-      if (ret != sizeof(uint16_t))
-        {
-          g_last_tcp_port = clock_systime_ticks() %
-                            (CONFIG_NET_DEFAULT_MAX_PORT -
-                            CONFIG_NET_DEFAULT_MIN_PORT + 1);
-        }
-      else
-        {
-          g_last_tcp_port = g_last_tcp_port %
-                            (CONFIG_NET_DEFAULT_MAX_PORT -
-                            CONFIG_NET_DEFAULT_MIN_PORT + 1);
-        }
-
+      g_last_tcp_port = g_last_tcp_port %
+                        (CONFIG_NET_DEFAULT_MAX_PORT -
+                         CONFIG_NET_DEFAULT_MIN_PORT + 1);
       g_last_tcp_port += CONFIG_NET_DEFAULT_MIN_PORT;
     }
 

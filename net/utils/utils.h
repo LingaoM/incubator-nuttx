@@ -192,6 +192,21 @@ uint8_t net_ipv6_common_pref(FAR const uint16_t *a1, FAR const uint16_t *a2);
 #endif
 
 /****************************************************************************
+ * Name: net_getrandom
+ *
+ * Description:
+ *   Fill a buffer of arbitrary length with randomness. This function is
+ *   guaranteed to be success.
+ *
+ * Input Parameters:
+ *   bytes  - Buffer for returned random bytes
+ *   nbytes - Number of bytes requested.
+ *
+ ****************************************************************************/
+
+void net_getrandom(FAR void *bytes, size_t nbytes);
+
+/****************************************************************************
  * Name: net_ipv6_mask2pref
  *
  * Description:
