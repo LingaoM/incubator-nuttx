@@ -485,10 +485,10 @@ int bcmf_wl_active(FAR struct bcmf_dev_s *priv, bool active)
       goto errout_in_sdio_active;
     }
 
-  /* TODO configure roaming if needed. Disable for now */
+  /* Enable roaming by default */
 
   out_len = 4;
-  value   = 1;
+  value   = 0;
   ret     = bcmf_cdc_iovar_request(priv, interface, true,
                                    IOVAR_STR_ROAM_OFF,
                                    (FAR uint8_t *)&value,
@@ -497,6 +497,8 @@ int bcmf_wl_active(FAR struct bcmf_dev_s *priv, bool active)
     {
       goto errout_in_sdio_active;
     }
+
+  wlinfo("set roam_off as value %d\n", value);
 
   /* TODO configure EAPOL version to default */
 
