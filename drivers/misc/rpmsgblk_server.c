@@ -120,6 +120,16 @@ static int rpmsgblk_open_handler(FAR struct rpmsg_endpoint *ept,
   FAR struct rpmsgblk_server_s *server = ept->priv;
   FAR struct rpmsgblk_open_s *msg = data;
 
+  /* To check if the block device has been removed by unlink operation. */
+
+#ifndef CONFIG_DISABLE_PSEUDOFS_OPERATIONS
+  if (server->blknode->i_peer == NULL)
+    {
+      msg->header.result = -ENODEV;
+      return rpmsg_send(ept, msg, sizeof(*msg));
+    }
+#endif
+
   if (server->bops->open != NULL)
     {
       msg->header.result = server->bops->open(server->blknode);
@@ -146,6 +156,14 @@ static int rpmsgblk_close_handler(FAR struct rpmsg_endpoint *ept,
 {
   FAR struct rpmsgblk_server_s *server = ept->priv;
   FAR struct rpmsgblk_close_s *msg = data;
+
+#ifndef CONFIG_DISABLE_PSEUDOFS_OPERATIONS
+  if (server->blknode->i_peer == NULL)
+    {
+      msg->header.result = -ENODEV;
+      return rpmsg_send(ept, msg, sizeof(*msg));
+    }
+#endif
 
   if (server->bops->close != NULL)
     {
@@ -178,6 +196,14 @@ static int rpmsgblk_read_handler(FAR struct rpmsg_endpoint *ept,
   size_t read = 0;
   size_t nsectors;
   uint32_t space;
+
+#ifndef CONFIG_DISABLE_PSEUDOFS_OPERATIONS
+  if (server->blknode->i_peer == NULL)
+    {
+      msg->header.result = -ENODEV;
+      return rpmsg_send(ept, msg, sizeof(*msg) - 1);
+    }
+#endif
 
   while (read < msg->nsectors)
     {
@@ -227,6 +253,14 @@ static int rpmsgblk_write_handler(FAR struct rpmsg_endpoint *ept,
   FAR struct rpmsgblk_write_s *msg = data;
   int ret;
 
+#ifndef CONFIG_DISABLE_PSEUDOFS_OPERATIONS
+  if (server->blknode->i_peer == NULL)
+    {
+      msg->header.result = -ENODEV;
+      return rpmsg_send(ept, msg, sizeof(*msg) - 1);
+    }
+#endif
+
   ret = server->bops->write(server->blknode, (FAR unsigned char *)msg->buf,
                             msg->startsector, msg->nsectors);
   if (ret <= 0)
@@ -258,6 +292,14 @@ static int rpmsgblk_geometry_handler(FAR struct rpmsg_endpoint *ept,
   FAR struct rpmsgblk_server_s *server = ept->priv;
   FAR struct rpmsgblk_geometry_s *msg = data;
 
+#ifndef CONFIG_DISABLE_PSEUDOFS_OPERATIONS
+  if (server->blknode->i_peer == NULL)
+    {
+      msg->header.result = -ENODEV;
+      return rpmsg_send(ept, msg, len);
+    }
+#endif
+
   DEBUGASSERT(msg->arglen == sizeof(struct geometry));
 
   msg->header.result = server->bops->geometry(
@@ -276,6 +318,14 @@ static int rpmsgblk_ioctl_handler(FAR struct rpmsg_endpoint *ept,
 {
   FAR struct rpmsgblk_server_s *server = ept->priv;
   FAR struct rpmsgblk_ioctl_s *msg = data;
+
+#ifndef CONFIG_DISABLE_PSEUDOFS_OPERATIONS
+  if (server->blknode->i_peer == NULL)
+    {
+      msg->header.result = -ENODEV;
+      return rpmsg_send(ept, msg, len);
+    }
+#endif
 
   switch (msg->request)
     {
