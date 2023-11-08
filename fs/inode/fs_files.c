@@ -547,7 +547,11 @@ int nx_dup2_from_tcb(FAR struct tcb_s *tcb, int fd1, int fd2)
                   filep);
 
 #ifdef CONFIG_FDSAN
-  filep->f_tag = file.f_tag;
+  filep->f_tag_fdsan = file.f_tag_fdsan;
+#endif
+
+#ifdef CONFIG_FDCHECK
+  filep->f_tag_fdcheck = file.f_tag_fdcheck;
 #endif
 
   nxmutex_unlock(&list->fl_lock);
