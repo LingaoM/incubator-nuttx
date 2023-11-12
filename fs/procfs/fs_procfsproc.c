@@ -1243,14 +1243,22 @@ static ssize_t proc_groupfd(FAR struct proc_file_s *procfile,
                             size_t buflen, off_t offset)
 {
   FAR struct task_group_s *group = tcb->group;
+  FAR struct file *filep;
   size_t remaining;
   size_t linesize;
   size_t copysize;
   size_t totalsize;
+  int count;
+  int ret;
   int i;
-  int j;
 
   DEBUGASSERT(group != NULL);
+
+  count = files_countlist(&group->tg_filelist);
+  if (count == 0)
+    {
+      return 0;
+    }
 
   remaining = buflen;
   totalsize = 0;
@@ -1272,63 +1280,59 @@ static ssize_t proc_groupfd(FAR struct proc_file_s *procfile,
 
   /* Examine each open file descriptor */
 
-  for (i = 0; i < group->tg_filelist.fl_rows; i++)
+  for (i = 0; i < count; i++)
     {
-      for (j = 0; j < CONFIG_NFILE_DESCRIPTORS_PER_BLOCK; j++)
+      ret = fs_getfilep(i, &filep);
+      if (ret != OK || filep == NULL)
         {
-          FAR struct file *file = &group->tg_filelist.fl_files[i][j];
-          char buf[CONFIG_FS_BACKTRACE * BACKTRACE_WIDTH + 1] = "";
-          char path[PATH_MAX];
+          continue;
+        }
+
+      char buf[CONFIG_FS_BACKTRACE * BACKTRACE_WIDTH + 1] = "";
+      char path[PATH_MAX];
+
 #if CONFIG_FS_BACKTRACE > 0
           FAR const char *format = " %0*p";
-          int k;
+          int j;
 #endif
 
-          /* Is there an inode associated with the file descriptor? */
-
-          if (file->f_inode == NULL)
-            {
-              continue;
-            }
-
-          if (file_ioctl(file, FIOC_FILEPATH, path) < 0)
-            {
-              path[0] = '\0';
-            }
+      if (file_ioctl(filep, FIOC_FILEPATH, path) < 0)
+        {
+          path[0] = '\0';
+        }
 
 #if CONFIG_FS_BACKTRACE > 0
-          for (k = 0; k < CONFIG_FS_BACKTRACE && file->backtrace[k]; k++)
+          for (j = 0; j < CONFIG_FS_BACKTRACE && file->backtrace[j]; j++)
             {
-              snprintf(buf + k * BACKTRACE_WIDTH,
-                       sizeof(buf) - k * BACKTRACE_WIDTH,
+              snprintf(buf + j * BACKTRACE_WIDTH,
+                       sizeof(buf) - j * BACKTRACE_WIDTH,
                        format, BACKTRACE_WIDTH - 1,
-                       file->backtrace[k]);
+                       file->backtrace[j]);
             }
 #endif
 
-          linesize = procfs_snprintf(procfile->line, STATUS_LINELEN,
-                                     "%-3d %-7d %-4x %-9ld %s%s\n",
-                                     i * CONFIG_NFILE_DESCRIPTORS_PER_BLOCK
-                                     + j, file->f_oflags,
-                                     INODE_GET_TYPE(file->f_inode),
-                                     (long)file->f_pos, path, buf);
-          if (linesize + 1 == STATUS_LINELEN)
-            {
-              procfile->line[STATUS_LINELEN - 2] = '\n';
-              linesize = STATUS_LINELEN;
-            }
+      linesize   = procfs_snprintf(procfile->line, STATUS_LINELEN,
+                                   "%-3d %-7d %-4x %-9ld %s%s\n",
+                                   i, filep->f_oflags,
+                                   INODE_GET_TYPE(filep->f_inode),
+                                   (long)filep->f_pos, path, buf);
 
-          copysize   = procfs_memcpy(procfile->line, linesize,
-                                     buffer, remaining, &offset);
+      if (linesize + 1 == STATUS_LINELEN)
+        {
+          procfile->line[STATUS_LINELEN - 2] = '\n';
+          linesize = STATUS_LINELEN;
+        }
 
-          totalsize += copysize;
-          buffer    += copysize;
-          remaining -= copysize;
+      copysize   = procfs_memcpy(procfile->line, linesize,
+                                 buffer, remaining, &offset);
 
-          if (totalsize >= buflen)
-            {
-              return totalsize;
-            }
+      totalsize += copysize;
+      buffer    += copysize;
+      remaining -= copysize;
+
+      if (totalsize >= buflen)
+        {
+          return totalsize;
         }
     }
 
