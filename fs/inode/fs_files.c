@@ -319,6 +319,7 @@ void files_releaselist(FAR struct filelist *list)
         }
 
       kmm_free(list->fl_files[i]);
+      list->fl_rows--;
     }
 
   kmm_free(list->fl_files);
@@ -328,16 +329,13 @@ void files_releaselist(FAR struct filelist *list)
  * Name: files_countlist
  *
  * Description:
- *   Given a file descriptor, return the corresponding instance of struct
- *   file.
+ *   Get file count from file list.
  *
  * Input Parameters:
- *   fd    - The file descriptor
- *   filep - The location to return the struct file instance
+ *   list - Pointer to the file list structure.
  *
  * Returned Value:
- *   Zero (OK) is returned on success; a negated errno value is returned on
- *   any failure.
+ *   file count of file list.
  *
  ****************************************************************************/
 
