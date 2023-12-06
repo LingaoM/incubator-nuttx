@@ -52,17 +52,27 @@ static void note_driver_instrument_enter(FAR void *this_fn,
                                          FAR void *call_site,
                                          FAR void *arg)
 {
-  sched_note_event_ip(NOTE_TAG_ALWAYS, (uintptr_t)this_fn,
-                      NOTE_DUMP_BEGIN, NULL, 0);
+  sched_note_string_ip(NOTE_TAG_ALWAYS, (uintptr_t)this_fn, "B");
 }
 
 static void note_driver_instrument_leave(FAR void *this_fn,
                                          FAR void *call_site,
                                          FAR void *arg)
 {
-  sched_note_event_ip(NOTE_TAG_ALWAYS, (uintptr_t)this_fn,
-                      NOTE_DUMP_END, NULL, 0);
+  sched_note_string_ip(NOTE_TAG_ALWAYS, (uintptr_t)this_fn, "E");
 }
+#endif
+
+/****************************************************************************
+ * Private Data
+ ****************************************************************************/
+
+#ifdef CONFIG_SCHED_INSTRUMENTATION_FUNCTION
+static struct instrument_s g_note_instrument =
+{
+  .enter = note_driver_instrument_enter,
+  .leave = note_driver_instrument_leave,
+};
 #endif
 
 /****************************************************************************
