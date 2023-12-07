@@ -752,7 +752,6 @@ int dup3(int fd1, int fd2, int flags)
 int nx_close_from_tcb(FAR struct tcb_s *tcb, int fd)
 {
   FAR struct file     *filep;
-  FAR struct file      file;
   FAR struct filelist *list;
 
 #ifdef CONFIG_FDCHECK
@@ -777,13 +776,7 @@ int nx_close_from_tcb(FAR struct tcb_s *tcb, int fd)
       return -EBADF;
     }
 
-  memcpy(&file, filep, sizeof(struct file));
-
-  /* Erase f_inode so filep can be reused */
-
-  filep->f_inode = NULL;
-
-  return file_close(&file);
+  return file_close(filep);
 }
 
 /****************************************************************************
