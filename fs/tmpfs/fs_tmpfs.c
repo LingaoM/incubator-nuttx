@@ -37,6 +37,7 @@
 #include <nuttx/fs/fs.h>
 #include <nuttx/fs/ioctl.h>
 
+#include "inode/inode.h"
 #include "fs_tmpfs.h"
 
 #ifndef CONFIG_DISABLE_MOUNTPOINT
@@ -100,7 +101,7 @@ static int  tmpfs_remove_dirent(FAR struct tmpfs_directory_s *tdo,
               FAR const char *name);
 static int  tmpfs_add_dirent(FAR struct tmpfs_directory_s *tdo,
               FAR struct tmpfs_object_s *to, FAR const char *name);
-static FAR struct tmpfs_file_s *tmpfs_alloc_file(void);
+static FAR struct tmpfs_file_s *tmpfs_alloc_file(FAR const char *relpath);
 static int  tmpfs_create_file(FAR struct tmpfs_s *fs,
               FAR const char *relpath, FAR struct tmpfs_file_s **tfo);
 static FAR struct tmpfs_directory_s *tmpfs_alloc_directory(void);
@@ -135,6 +136,7 @@ static ssize_t tmpfs_read(FAR struct file *filep, FAR char *buffer,
 static ssize_t tmpfs_write(FAR struct file *filep, FAR const char *buffer,
               size_t buflen);
 static off_t tmpfs_seek(FAR struct file *filep, off_t offset, int whence);
+static int  tmpfs_ioctl(FAR struct file *filep, int cmd, unsigned long arg);
 static int  tmpfs_sync(FAR struct file *filep);
 static int  tmpfs_dup(FAR const struct file *oldp, FAR struct file *newp);
 static int  tmpfs_fstat(FAR const struct file *filep, FAR struct stat *buf);
@@ -178,7 +180,7 @@ const struct mountpt_operations g_tmpfs_operations =
   tmpfs_read,       /* read */
   tmpfs_write,      /* write */
   tmpfs_seek,       /* seek */
-  NULL,             /* ioctl */
+  tmpfs_ioctl,      /* ioctl */
   tmpfs_mmap,       /* mmap */
   tmpfs_truncate,   /* truncate */
 
@@ -359,6 +361,7 @@ static void tmpfs_release_lockedfile(FAR struct tmpfs_file_s *tfo)
       tmpfs_unlock_file(tfo);
       nxrmutex_destroy(&tfo->tfo_lock);
       kmm_free(tfo->tfo_data);
+      kmm_free(tfo->tfo_path);
       kmm_free(tfo);
     }
 
@@ -533,7 +536,7 @@ static int tmpfs_add_dirent(FAR struct tmpfs_directory_s *tdo,
  * Name: tmpfs_alloc_file
  ****************************************************************************/
 
-static FAR struct tmpfs_file_s *tmpfs_alloc_file(void)
+static FAR struct tmpfs_file_s *tmpfs_alloc_file(FAR const char *relpath)
 {
   FAR struct tmpfs_file_s *tfo;
 
@@ -555,6 +558,15 @@ static FAR struct tmpfs_file_s *tmpfs_alloc_file(void)
   tfo->tfo_flags = 0;
   tfo->tfo_size  = 0;
   tfo->tfo_data  = NULL;
+
+  /* Save the relative path to this file for ioctl calls */
+
+  tfo->tfo_path = strdup(relpath);
+  if (tfo->tfo_path == NULL)
+    {
+      kmm_free(tfo);
+      return NULL;
+    }
 
   nxrmutex_init(&tfo->tfo_lock);
   tmpfs_lock_file(tfo);
@@ -642,7 +654,7 @@ static int tmpfs_create_file(FAR struct tmpfs_s *fs,
    * one reference count.
    */
 
-  newtfo = tmpfs_alloc_file();
+  newtfo = tmpfs_alloc_file(relpath);
   if (newtfo == NULL)
     {
       ret = -ENOMEM;
@@ -1709,6 +1721,35 @@ static int tmpfs_mmap(FAR struct file *filep, FAR struct mm_map_entry_s *map)
     }
 
   return ret;
+}
+
+/****************************************************************************
+ * Name: tmpfs_ioctl
+ ****************************************************************************/
+
+static int tmpfs_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
+{
+  FAR struct tmpfs_file_s *tfo;
+
+  /* Sanity checks */
+
+  DEBUGASSERT(filep->f_priv != NULL);
+
+  /* Recover our private data from the struct file instance */
+
+  tfo = filep->f_priv;
+
+  /* Only one ioctl command is supported */
+
+  if (cmd == FIOC_FILEPATH)
+    {
+      FAR char *ptr = (FAR char *)((uintptr_t)arg);
+      inode_getpath(filep->f_inode, ptr, PATH_MAX);
+      strlcat(ptr, tfo->tfo_path, PATH_MAX);
+      return OK;
+    }
+
+  return -ENOTTY;
 }
 
 /****************************************************************************

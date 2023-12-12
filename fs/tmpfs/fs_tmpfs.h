@@ -124,6 +124,7 @@ struct tmpfs_file_s
   uint8_t       tfo_flags; /* See TFO_FLAG_* definitions */
   size_t        tfo_size;  /* Valid file size */
   FAR uint8_t  *tfo_data;  /* File data starts here */
+  FAR char     *tfo_path;  /* Save file name */
 };
 
 /* This structure represents one instance of a TMPFS file system */
