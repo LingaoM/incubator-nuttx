@@ -209,7 +209,6 @@ static int nx_dup3_from_tcb(FAR struct tcb_s *tcb, int fd1, int fd2,
 {
   FAR struct filelist *list;
   FAR struct file *filep;
-  FAR struct file  file;
 #ifdef CONFIG_FDCHECK
   uint8_t f_tag_fdcheck;
 #endif
@@ -229,14 +228,12 @@ static int nx_dup3_from_tcb(FAR struct tcb_s *tcb, int fd1, int fd2,
   fd2 = fdcheck_restore(fd2);
 #endif
 
-  list = nxsched_get_files_from_tcb(tcb);
-
-  count = files_countlist(list);
-
   /* Get the file descriptor list.  It should not be NULL in this context. */
 
-  if (fd1 < 0 || fd1 >= count ||
-      fd2 < 0)
+  list = nxsched_get_files_from_tcb(tcb);
+  count = files_countlist(list);
+
+  if (fd1 < 0 || fd1 >= count || fd2 < 0)
     {
       return -EBADF;
     }
@@ -264,9 +261,6 @@ static int nx_dup3_from_tcb(FAR struct tcb_s *tcb, int fd1, int fd2,
   f_tag_fdcheck = filep->f_tag_fdcheck;
 #endif
 
-  memcpy(&file, filep, sizeof(struct file));
-  memset(filep, 0,     sizeof(struct file));
-
   /* Perform the dup3 operation */
 
   ret = file_dup3(files_fget(list, fd1), filep, flags);
@@ -282,8 +276,6 @@ static int nx_dup3_from_tcb(FAR struct tcb_s *tcb, int fd1, int fd2,
 #ifdef CONFIG_FDCHECK
   filep->f_tag_fdcheck = f_tag_fdcheck;
 #endif
-
-  file_close(&file);
 
 #ifdef CONFIG_FDCHECK
   return fdcheck_protect(fd2);
