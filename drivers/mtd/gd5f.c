@@ -761,7 +761,7 @@ static int gd5f_ioctl(FAR struct mtd_dev_s *dev, int cmd, unsigned long arg)
 
               ret = OK;
 
-              finfo("blocksize: %d erasesize: %d neraseblocks: %d\n",
+              finfo("blocksize: %"PRIu32" erasesize: %"PRIu32" neraseblocks: %"PRIu32"\n",
                        geo->blocksize, geo->erasesize, geo->neraseblocks);
             }
         }
