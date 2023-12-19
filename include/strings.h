@@ -97,7 +97,7 @@ void bzero(FAR void *s, size_t n);
 fortify_function(bzero) void bzero(FAR void *s, size_t n)
 {
   fortify_assert(n <= fortify_size(s, 0));
-  return bzero(s, n);
+  return __real_bzero(s, n);
 }
 #endif
 
