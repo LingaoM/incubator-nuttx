@@ -1056,18 +1056,27 @@ static int pcm_enqueuebuffer(FAR struct audio_lowerhalf_s *dev,
         }
 
 #ifndef CONFIG_AUDIO_EXCLUDE_FFORWARD
+
+#ifdef CONFIG_AUDIO_LARGE_BUFFERS
+      audinfo("Received: apb=%p curbyte=%ld nbytes=%ld flags=%04x\n",
+              apb, apb->curbyte, apb->nbytes, apb->flags);
+#else
       audinfo("Received: apb=%p curbyte=%d nbytes=%d flags=%04x\n",
               apb, apb->curbyte, apb->nbytes, apb->flags);
-
+#endif
       /* Perform any necessary sub-sampling operations */
 
       pcm_subsample(priv, apb);
 #endif
 
       /* Then give the audio buffer to the lower driver */
-
+#ifdef CONFIG_AUDIO_LARGE_BUFFERS
+      audinfo("Pass to lower enqueuebuffer: apb=%p curbyte=%ld nbytes=%ld\n",
+              apb, apb->curbyte, apb->nbytes);
+#else
       audinfo("Pass to lower enqueuebuffer: apb=%p curbyte=%d nbytes=%d\n",
               apb, apb->curbyte, apb->nbytes);
+#endif
 
       return lower->ops->enqueuebuffer(lower, apb);
     }
@@ -1079,8 +1088,14 @@ static int pcm_enqueuebuffer(FAR struct audio_lowerhalf_s *dev,
    */
 
   bytesleft = apb->nbytes - apb->curbyte;
+
+#ifdef CONFIG_AUDIO_LARGE_BUFFERS
+  audinfo("curbyte=%ld nbytes=%ld nmaxbytes=%ld bytesleft=%ld\n",
+          apb->curbyte, apb->nbytes, apb->nmaxbytes, bytesleft);
+#else
   audinfo("curbyte=%d nbytes=%d nmaxbytes=%d bytesleft=%d\n",
           apb->curbyte, apb->nbytes, apb->nmaxbytes, bytesleft);
+#endif
 
   /* Parse and verify the candidate PCM WAV file header */
 
@@ -1120,8 +1135,14 @@ static int pcm_enqueuebuffer(FAR struct audio_lowerhalf_s *dev,
       apb->curbyte += headersize;
 #endif
 #ifndef CONFIG_AUDIO_EXCLUDE_FFORWARD
+
+#ifdef CONFIG_AUDIO_LARGE_BUFFERS
+      audinfo("Begin streaming: apb=%p curbyte=%ld nbytes=%ld\n",
+              apb, apb->curbyte, apb->nbytes);
+#else
       audinfo("Begin streaming: apb=%p curbyte=%d nbytes=%d\n",
               apb, apb->curbyte, apb->nbytes);
+#endif
 
       /* Perform any necessary sub-sampling operations */
 
@@ -1130,9 +1151,15 @@ static int pcm_enqueuebuffer(FAR struct audio_lowerhalf_s *dev,
 
       /* Then give the audio buffer to the lower driver */
 
+#ifdef CONFIG_AUDIO_LARGE_BUFFERS
+      audinfo(
+           "Pass to lower enqueuebuffer: apb=%p curbyte=%ld nbytes=%ld\n",
+            apb, apb->curbyte, apb->nbytes);
+#else
       audinfo(
            "Pass to lower enqueuebuffer: apb=%p curbyte=%d nbytes=%d\n",
             apb, apb->curbyte, apb->nbytes);
+#endif
 
       ret = lower->ops->enqueuebuffer(lower, apb);
       if (ret == OK)
