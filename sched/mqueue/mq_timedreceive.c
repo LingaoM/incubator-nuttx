@@ -276,7 +276,7 @@ ssize_t nxmq_timedreceive(mqd_t mqdes, FAR char *msg, size_t msglen,
                           FAR const struct timespec *abstime)
 {
   FAR struct file *filep;
-  int ret;
+  ssize_t ret;
 
   ret = fs_getfilep(mqdes, &filep);
   if (ret < 0)
@@ -284,7 +284,9 @@ ssize_t nxmq_timedreceive(mqd_t mqdes, FAR char *msg, size_t msglen,
       return ret;
     }
 
-  return file_mq_timedreceive(filep, msg, msglen, prio, abstime);
+  ret = file_mq_timedreceive(filep, msg, msglen, prio, abstime);
+  fs_putfilep(filep);
+  return ret;
 }
 
 /****************************************************************************
