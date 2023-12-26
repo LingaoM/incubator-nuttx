@@ -877,12 +877,12 @@ static void usbdev_fs_connect(FAR struct usbdev_fs_dev_s *fs, int connect)
 
   if (connect)
     {
-      /* Notify poll/select with POLLIN */
+      /* Notify poll/select with POLLPRI */
 
       for (cnt = 0; cnt < devinfo->nendpoints; cnt++)
         {
           fs_ep = &fs->eps[cnt];
-          poll_notify(fs_ep->fds, CONFIG_USBDEV_FS_NPOLLWAITERS, POLLIN);
+          poll_notify(fs_ep->fds, CONFIG_USBDEV_FS_NPOLLWAITERS, POLLPRI);
         }
     }
   else
