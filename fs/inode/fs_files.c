@@ -113,6 +113,12 @@ static void task_fssync(FAR struct tcb_s *tcb, FAR void *arg)
   int j;
 
   list = &tcb->group->tg_filelist;
+
+  if (list->fl_rows == 0)
+    {
+      return;
+    }
+
   if (nxmutex_lock(&list->fl_lock) < 0)
     {
       return;
@@ -170,10 +176,7 @@ void files_releaselist(FAR struct filelist *list)
 
   DEBUGASSERT(list);
 
-  /* Close each file descriptor .. Normally, you would need take the list
-   * mutex, but it is safe to ignore the mutex in this context
-   * because there should not be any references in this context.
-   */
+  nxmutex_lock(&list->fl_lock);
 
   for (i = list->fl_rows - 1; i >= 0; i--)
     {
@@ -183,9 +186,12 @@ void files_releaselist(FAR struct filelist *list)
         }
 
       kmm_free(list->fl_files[i]);
+      list->fl_rows--;
     }
 
   kmm_free(list->fl_files);
+
+  nxmutex_unlock(&list->fl_lock);
 
   /* Destroy the mutex */
 
