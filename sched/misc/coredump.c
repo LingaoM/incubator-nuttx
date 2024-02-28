@@ -129,7 +129,8 @@ static void coredump_dump_blkdev(pid_t pid)
   info = (FAR struct coredump_info_s *)g_blockinfo;
   if (info->magic == COREDUMP_MAGIC)
     {
-      _alert("Coredump exists in %s, skip\n");
+      _alert("Coredump exists in %s, skip\n",
+              CONFIG_BOARD_COREDUMP_BLKDEV_PATH);
       return;
     }
 
@@ -172,7 +173,6 @@ static void coredump_dump_blkdev(pid_t pid)
 
 int coredump_set_memory_region(FAR struct memory_region_s *region)
 {
-
   /* Not free g_regions, because allow call this fun when crash */
 
   g_regions = region;
