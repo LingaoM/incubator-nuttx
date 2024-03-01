@@ -641,9 +641,9 @@ void _assert(FAR const char *filename, int linenum,
       /* Dump core information */
 
 #  ifdef CONFIG_BOARD_COREDUMP_FULL
-      coredump_dump(INVALID_PROCESS_ID);
+      coredump_dump(INVALID_PROCESS_ID, regs);
 #  else
-      coredump_dump(rtcb->pid);
+      coredump_dump(rtcb->pid, regs);
 #  endif
 #endif
 

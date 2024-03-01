@@ -265,7 +265,11 @@ static void elf_emit_tcb_note(FAR struct elf_dumpinfo_s *cinfo,
 
   if (running_task() == tcb)
     {
-      if (up_interrupt_context())
+      if (cinfo->regs)
+        {
+          regs = (FAR uint32_t *)cinfo->regs;
+        }
+      else if (up_interrupt_context())
         {
           regs = (FAR uint32_t *)CURRENT_REGS;
         }
@@ -423,7 +427,6 @@ static void elf_emit_memory(FAR struct elf_dumpinfo_s *cinfo, int memsegs)
 
   for (i = 0; i < memsegs; i++)
     {
-
       if (cinfo->regions[i].flags & PF_REGISTER)
         {
           FAR uintptr_t *start = (FAR uintptr_t *)cinfo->regions[i].start;
@@ -440,7 +443,6 @@ static void elf_emit_memory(FAR struct elf_dumpinfo_s *cinfo, int memsegs)
                   elf_emit(cinfo, buf, sizeof(buf));
                   offset = 0;
                 }
-
             }
 
           if (offset != 0)

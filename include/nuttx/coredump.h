@@ -64,6 +64,6 @@ int coredump_initialize(void);
  *
  ****************************************************************************/
 
-void coredump_dump(pid_t pid);
+void coredump_dump(pid_t pid, FAR void *regs);
 
 #endif /* __INCLUDE_NUTTX_COREDUMP_H */

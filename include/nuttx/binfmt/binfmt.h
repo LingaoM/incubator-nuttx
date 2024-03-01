@@ -137,7 +137,7 @@ struct binfmt_s
 
   CODE int (*coredump)(FAR struct memory_region_s *regions,
                        FAR struct lib_outstream_s *stream,
-                       pid_t pid);
+                       pid_t pid, FAR void *regs);
 };
 
 /* Coredump information for block header */
@@ -218,7 +218,7 @@ int unregister_binfmt(FAR struct binfmt_s *binfmt);
 
 int core_dump(FAR struct memory_region_s *regions,
               FAR struct lib_outstream_s *stream,
-              pid_t pid);
+              pid_t pid, FAR void *regs);
 
 /****************************************************************************
  * Name: load_module

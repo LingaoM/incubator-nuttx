@@ -60,7 +60,7 @@ static struct memory_region_s *g_regions;
  ****************************************************************************/
 
 #ifdef CONFIG_BOARD_COREDUMP_SYSLOG
-static void coredump_dump_syslog(pid_t pid)
+static void coredump_dump_syslog(pid_t pid, FAR void *regs)
 {
   FAR void *stream;
   int logmask;
@@ -85,7 +85,7 @@ static void coredump_dump_syslog(pid_t pid)
 
   /* Do core dump */
 
-  core_dump(g_regions, stream, pid);
+  core_dump(g_regions, stream, pid, regs);
 
 #  ifdef CONFIG_BOARD_COREDUMP_COMPRESSION
   _alert("Finish coredump (Compression Enabled).\n");
@@ -106,7 +106,7 @@ static void coredump_dump_syslog(pid_t pid)
  ****************************************************************************/
 
 #ifdef CONFIG_BOARD_COREDUMP_BLKDEV
-static void coredump_dump_blkdev(pid_t pid)
+static void coredump_dump_blkdev(pid_t pid, FAR void *regs)
 {
   FAR void *stream = &g_blockstream;
   FAR struct coredump_info_s *info;
@@ -140,7 +140,7 @@ static void coredump_dump_blkdev(pid_t pid)
   stream = &g_lzfstream;
 #endif
 
-  ret = core_dump(g_regions, stream, pid);
+  ret = core_dump(g_regions, stream, pid, regs);
   if (ret < 0)
     {
       _alert("Coredump fail\n");
@@ -240,13 +240,13 @@ int coredump_initialize(void)
  *
  ****************************************************************************/
 
-void coredump_dump(pid_t pid)
+void coredump_dump(pid_t pid, FAR void *regs)
 {
 #ifdef CONFIG_BOARD_COREDUMP_SYSLOG
-  coredump_dump_syslog(pid);
+  coredump_dump_syslog(pid, regs);
 #endif
 
 #ifdef CONFIG_BOARD_COREDUMP_BLKDEV
-  coredump_dump_blkdev(pid);
+  coredump_dump_blkdev(pid, regs);
 #endif
 }
