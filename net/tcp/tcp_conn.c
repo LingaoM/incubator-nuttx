@@ -593,17 +593,17 @@ int tcp_selectport(uint8_t domain,
       if (ret != sizeof(uint16_t))
         {
           g_last_tcp_port = clock_systime_ticks() %
-                            CONFIG_NET_DEFAULT_MAX_PORT;
+                            (CONFIG_NET_DEFAULT_MAX_PORT -
+                            CONFIG_NET_DEFAULT_MIN_PORT + 1);
         }
       else
         {
-          g_last_tcp_port = g_last_tcp_port % CONFIG_NET_DEFAULT_MAX_PORT;
+          g_last_tcp_port = g_last_tcp_port %
+                            (CONFIG_NET_DEFAULT_MAX_PORT -
+                            CONFIG_NET_DEFAULT_MIN_PORT + 1);
         }
 
-      if (g_last_tcp_port < CONFIG_NET_DEFAULT_MIN_PORT)
-        {
-          g_last_tcp_port += CONFIG_NET_DEFAULT_MIN_PORT;
-        }
+      g_last_tcp_port += CONFIG_NET_DEFAULT_MIN_PORT;
     }
 
   if (portno == 0)
@@ -621,7 +621,10 @@ int tcp_selectport(uint8_t domain,
            * is within range.
            */
 
-          if (++g_last_tcp_port >= CONFIG_NET_DEFAULT_MAX_PORT)
+          ++g_last_tcp_port;
+
+          if (g_last_tcp_port > CONFIG_NET_DEFAULT_MAX_PORT ||
+              g_last_tcp_port < CONFIG_NET_DEFAULT_MIN_PORT)
             {
               g_last_tcp_port = CONFIG_NET_DEFAULT_MIN_PORT;
             }
