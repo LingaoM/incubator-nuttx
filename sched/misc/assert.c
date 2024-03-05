@@ -90,7 +90,7 @@ static FAR const char * const g_ttypenames[4] =
   "Invalid"
 };
 
-static bool g_fatal_assert = false;
+static uint8_t g_fatal_assert;
 
 /****************************************************************************
  * Private Functions
@@ -532,7 +532,7 @@ void _assert(FAR const char *filename, int linenum,
 
   sched_lock();
 
-  if (g_fatal_assert)
+  if (g_fatal_assert >= 2)
     {
       goto reset;
     }
@@ -554,7 +554,7 @@ void _assert(FAR const char *filename, int linenum,
   else
 #endif
     {
-      g_fatal_assert = true;
+      g_fatal_assert++;
     }
 
   notifier_data.rtcb = rtcb;
