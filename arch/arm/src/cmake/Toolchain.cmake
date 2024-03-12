@@ -218,6 +218,10 @@ if(CONFIG_MM_UBSAN_ALL)
   add_compile_options(${CONFIG_MM_UBSAN_OPTION})
 endif()
 
+if(CONFIG_SCHED_GPROF_ALL)
+  add_compile_options(-pg)
+endif()
+
 if(CONFIG_MM_UBSAN_TRAP_ON_ERROR)
   add_compile_options(-fsanitize-undefined-trap-on-error)
 endif()
