@@ -64,15 +64,15 @@ unsigned long up_perf_getfreq(void)
   return read_sysreg(cntfrq_el0);
 }
 
-unsigned long up_perf_gettime(void)
+clock_t up_perf_gettime(void)
 {
   return pmu_get_ccntr();
 }
 
-void up_perf_convert(unsigned long elapsed, struct timespec *ts)
+void up_perf_convert(clock_t elapsed, struct timespec *ts)
 {
-  unsigned long left;
   unsigned long cpu_freq = read_sysreg(cntfrq_el0);
+  clock_t left;
 
   ts->tv_sec  = elapsed / cpu_freq;
   left        = elapsed - ts->tv_sec * cpu_freq;
