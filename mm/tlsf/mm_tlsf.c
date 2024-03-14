@@ -1152,7 +1152,7 @@ FAR void *mm_malloc(FAR struct mm_heap_s *heap, size_t size)
 
       memdump_backtrace(heap, buf, true);
 #endif
-      kasan_unpoison(ret, mm_malloc_size(heap, ret));
+      ret = kasan_unpoison(ret, mm_malloc_size(heap, ret));
 
 #ifdef CONFIG_MM_FILL_ALLOCATIONS
       memset(ret, 0xaa, mm_malloc_size(heap, ret));
@@ -1226,7 +1226,7 @@ FAR void *mm_memalign(FAR struct mm_heap_s *heap, size_t alignment,
 
       memdump_backtrace(heap, buf, true);
 #endif
-      kasan_unpoison(ret, mm_malloc_size(heap, ret));
+      ret = kasan_unpoison(ret, mm_malloc_size(heap, ret));
     }
 
 #if CONFIG_MM_FREE_DELAYCOUNT_MAX > 0

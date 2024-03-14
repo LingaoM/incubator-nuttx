@@ -410,7 +410,6 @@ retry:
   pool->nalloc++;
 
   spin_unlock_irqrestore(&pool->lock, flags);
-
 #ifdef CONFIG_MM_FILL_ALLOCATIONS
   memset(blk, 0xaa, pool->blocksize);
 #endif
@@ -419,7 +418,7 @@ retry:
   mempool_add_backtrace(pool, (FAR struct mempool_backtrace_s *)
                               ((FAR char *)blk + pool->blocksize), true);
 #endif
-  kasan_unpoison(blk, pool->blocksize);
+  blk = kasan_unpoison(blk, pool->blocksize);
   return blk;
 }
 
@@ -646,7 +645,8 @@ int mempool_deinit(FAR struct mempool_s *pool)
   while ((blk = mempool_remove_queue(pool, &pool->equeue)) != NULL)
     {
       blk = (FAR sq_entry_t *)((FAR char *)blk - count * blocksize);
-      kasan_unpoison(blk, count * blocksize + sizeof(sq_entry_t));
+
+      blk = kasan_unpoison(blk, count * blocksize + sizeof(sq_entry_t));
       pool->free(pool, blk);
       if (pool->expandsize >= blocksize + sizeof(sq_entry_t))
         {
@@ -656,8 +656,8 @@ int mempool_deinit(FAR struct mempool_s *pool)
 
   if (pool->ibase)
     {
-      kasan_unpoison(pool->ibase,
-                     pool->interruptsize / blocksize * blocksize);
+      pool->ibase = kasan_unpoison(pool->ibase,
+                                   pool->interruptsize / blocksize * blocksize);
       pool->free(pool, pool->ibase);
     }
 
