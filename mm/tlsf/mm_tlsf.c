@@ -503,7 +503,18 @@ static void mm_delayfree(FAR struct mm_heap_s *heap, FAR void *mem,
   if (mm_lock(heap) == 0)
     {
 #ifdef CONFIG_MM_FILL_ALLOCATIONS
+#if CONFIG_MM_FREE_DELAYCOUNT_MAX > 0
+  /* If delay free is enabled, a memory node will be freed twice.
+   * The first time is to add the node to the delay list, and the second
+   * time is to actually free the node. Therefore, we only colorize the
+   * memory node the first time, when `delay` is set to true.
+   */
+
+  if (delay)
+#endif
+    {
       memset(mem, 0x55, mm_malloc_size(heap, mem));
+    }
 #endif
 
       kasan_poison(mem, mm_malloc_size(heap, mem));
