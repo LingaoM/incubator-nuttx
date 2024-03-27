@@ -309,7 +309,7 @@ if(CONFIG_DEBUG_LINK_MAP)
 endif()
 
 if(CONFIG_DEBUG_SYMBOLS)
-  add_compile_options(-g)
+  add_compile_options(-g3)
   if(CONFIG_ARM_TOOLCHAIN_ARMCLANG)
     add_link_options(-Wl,--debug)
   endif()
