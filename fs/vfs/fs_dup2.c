@@ -160,5 +160,7 @@ int file_dup2(FAR struct file *filep1, FAR struct file *filep2)
   /* Return the file structure */
 
   memcpy(filep2, &temp, sizeof(temp));
+
+  FS_ADD_BACKTRACE(filep2->backtrace);
   return OK;
 }

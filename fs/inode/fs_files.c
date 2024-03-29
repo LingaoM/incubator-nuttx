@@ -268,6 +268,8 @@ int file_allocate_from_tcb(FAR struct tcb_s *tcb, FAR struct inode *inode,
                   inode_addref(inode);
                 }
 
+              FS_ADD_BACKTRACE(list->fl_files[i][j].backtrace);
+
 #ifdef CONFIG_FDCHECK
               return
                 fdcheck_protect(i * CONFIG_NFILE_DESCRIPTORS_PER_BLOCK + j);
@@ -301,6 +303,8 @@ int file_allocate_from_tcb(FAR struct tcb_s *tcb, FAR struct inode *inode,
     {
       inode_addref(inode);
     }
+
+  FS_ADD_BACKTRACE(list->fl_files[i][0].backtrace);
 
 #ifdef CONFIG_FDCHECK
   return fdcheck_protect(i * CONFIG_NFILE_DESCRIPTORS_PER_BLOCK);
