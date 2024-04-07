@@ -33,21 +33,16 @@ set(SRCS
     lib_psa_setschedparam.c
     lib_psa_setschedpolicy.c
     lib_psa_getsigmask.c
-    lib_psa_setsigmask.c)
-
-if(CONFIG_DEBUG_FEATURES)
-  list(APPEND SRCS lib_psfa_dump.c)
-endif()
+    lib_psa_setsigmask.c
+    lib_psa_getstacksize.c
+    lib_psa_setstacksize.c)
 
 if(NOT CONFIG_BUILD_KERNEL)
   list(APPEND SRCS lib_psa_getstacksize.c lib_psa_setstacksize.c)
-  if(CONFIG_LIB_SYSCALL)
-    list(APPEND SRCS lib_task_spawn.c)
-  endif()
 endif()
 
 if(CONFIG_DEBUG_FEATURES)
-  list(APPEND SRCS lib_psa_dump.c)
+  list(APPEND SRCS lib_psfa_dump.c lib_psa_dump.c)
 endif()
 
 target_sources(c PRIVATE ${SRCS})

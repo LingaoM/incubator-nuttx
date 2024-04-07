@@ -17,23 +17,24 @@
 # the License.
 #
 # ##############################################################################
+if(NOT CONFIG_DISABLE_MOUNTPOINT)
+  if(CONFIG_FS_PROCFS)
 
-if(CONFIG_FS_PROCFS)
+    set(SRCS
+        fs_procfs.c
+        fs_procfscpuinfo.c
+        fs_procfscpuload.c
+        fs_procfscritmon.c
+        fs_procfsfdt.c
+        fs_procfsiobinfo.c
+        fs_procfsmeminfo.c
+        fs_procfsproc.c
+        fs_procfstcbinfo.c
+        fs_procfsuptime.c
+        fs_procfsutil.c
+        fs_procfsversion.c)
 
-  set(SRCS
-      fs_procfs.c
-      fs_procfscpuinfo.c
-      fs_procfscpuload.c
-      fs_procfscritmon.c
-      fs_procfsfdt.c
-      fs_procfsiobinfo.c
-      fs_procfsmeminfo.c
-      fs_procfsproc.c
-      fs_procfstcbinfo.c
-      fs_procfsuptime.c
-      fs_procfsutil.c
-      fs_procfsversion.c)
+    target_sources(fs PRIVATE ${SRCS})
 
-  target_sources(fs PRIVATE ${SRCS})
-
+  endif()
 endif()
