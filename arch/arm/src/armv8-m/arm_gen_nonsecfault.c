@@ -149,12 +149,8 @@ int arm_gen_nonsecurefault(int irq, uint32_t *regs)
 
   syslog_flush();
 
-  /* Force set return ReturnAddress to 0, then non-secure cpu will crash.
-   * Also, the ReturnAddress is very important, so move it to R12.
-   */
+  /* Let REE trigger NMI exception */
 
-  putreg32(getreg32(sp_ns + OFFSET_R15), sp_ns + OFFSET_R12);
-  putreg32(0, sp_ns + OFFSET_R15);
-
+  putreg32(NVIC_INTCTRL_NMIPENDSET, NVIC_INTCTRL);
   return 1;
 }
