@@ -78,19 +78,16 @@ uint32_t *arm_doirq(int irq, uint32_t *regs)
 
   if (irq == NVIC_IRQ_PENDSV)
     {
-      int flags;
+      up_irq_save();
 
-      flags = up_irq_save();
-
-      if (up_running_task() != NULL)
+      if (up_running_task() == NULL)
         {
-          up_running_task()->xcp.regs = regs;
+          up_set_running_task(this_task_irq());
         }
 
+      up_running_task()->xcp.regs = regs;
       regs = this_task_irq()->xcp.regs;
       up_set_running_task(NULL);
-
-      up_irq_restore(flags);
     }
   else
     {
@@ -105,7 +102,7 @@ uint32_t *arm_doirq(int irq, uint32_t *regs)
 
       /* Return to thread mode, restore newest thread regs */
 
-      regs = (uint32_t *)CURRENT_REGS;
+      regs = this_task_irq()->xcp.regs;
       up_set_running_task(NULL);
 
       CURRENT_REGS = NULL;
