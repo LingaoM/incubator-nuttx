@@ -113,6 +113,93 @@ static inline void mps_prioritize_syscall(int priority)
  *
  ****************************************************************************/
 
+void mps_dumpnvic(const char *msg, int irq)
+{
+  irqstate_t flags;
+
+  flags = enter_critical_section();
+
+  syslog(1, "NVIC (%s, irq=%d):\n", msg, irq);
+  syslog(1, "  INTCTRL:    %08lx VECTAB:  %08lx\n",
+          getreg32(NVIC_INTCTRL), getreg32(NVIC_VECTAB));
+#if 0
+  syslog(1, "  SYSH ENABLE MEMFAULT: %08lx BUSFAULT: %08lx USGFAULT: %08lx "
+          "SYSTICK: %08lx\n",
+          getreg32(NVIC_SYSHCON_MEMFAULTENA),
+          getreg32(NVIC_SYSHCON_BUSFAULTENA),
+          getreg32(NVIC_SYSHCON_USGFAULTENA),
+          getreg32(NVIC_SYSTICK_CTRL_ENABLE));
+#endif
+  syslog(1, "  IRQ ENABLE: %08lx %08lx %08lx\n",
+          getreg32(NVIC_IRQ0_31_ENABLE),
+          getreg32(NVIC_IRQ32_63_ENABLE),
+          getreg32(NVIC_IRQ64_95_ENABLE));
+  syslog(1, "  SYSH_PRIO:  %08lx %08lx %08lx\n",
+          getreg32(NVIC_SYSH4_7_PRIORITY),
+          getreg32(NVIC_SYSH8_11_PRIORITY),
+          getreg32(NVIC_SYSH12_15_PRIORITY));
+  syslog(1, "  IRQ PRIO:   %08lx %08lx %08lx %08lx\n",
+          getreg32(NVIC_IRQ0_3_PRIORITY),
+          getreg32(NVIC_IRQ4_7_PRIORITY),
+          getreg32(NVIC_IRQ8_11_PRIORITY),
+          getreg32(NVIC_IRQ12_15_PRIORITY));
+  syslog(1, "              %08lx %08lx %08lx %08lx\n",
+          getreg32(NVIC_IRQ16_19_PRIORITY),
+          getreg32(NVIC_IRQ20_23_PRIORITY),
+          getreg32(NVIC_IRQ24_27_PRIORITY),
+          getreg32(NVIC_IRQ28_31_PRIORITY));
+  syslog(1, "              %08lx %08lx %08lx %08lx\n",
+          getreg32(NVIC_IRQ32_35_PRIORITY),
+          getreg32(NVIC_IRQ36_39_PRIORITY),
+          getreg32(NVIC_IRQ40_43_PRIORITY),
+          getreg32(NVIC_IRQ44_47_PRIORITY));
+  syslog(1, "              %08lx %08lx %08lx %08lx\n",
+          getreg32(NVIC_IRQ48_51_PRIORITY),
+          getreg32(NVIC_IRQ52_55_PRIORITY),
+          getreg32(NVIC_IRQ56_59_PRIORITY),
+          getreg32(NVIC_IRQ60_63_PRIORITY));
+  syslog(1, "              %08lx\n",
+          getreg32(NVIC_IRQ64_67_PRIORITY));
+
+  leave_critical_section(flags);
+}
+
+int up_prioritize_irq(int irq, int priority)
+{
+  uint32_t regaddr;
+  uint32_t regval;
+  int shift;
+
+  DEBUGASSERT(irq >= 0 && irq < NR_IRQS &&
+              (unsigned)priority <= NVIC_SYSH_PRIORITY_MIN);
+
+  if (irq < 16)
+    {
+      /* NVIC_SYSH_PRIORITY() maps {0..15} to one of three priority
+       * registers (0-3 are invalid)
+       */
+
+      regaddr = NVIC_SYSH_PRIORITY(irq);
+      irq    -= 4;
+    }
+  else
+    {
+      /* NVIC_IRQ_PRIORITY() maps {0..} to one of many priority registers */
+
+      irq    -= 16;
+      regaddr = NVIC_IRQ_PRIORITY(irq);
+    }
+
+  regval      = getreg32(regaddr);
+  shift       = ((irq & 3) << 3);
+  regval     &= ~(0xff << shift);
+  regval     |= (priority << shift);
+  putreg32(regval, regaddr);
+
+  mps_dumpnvic("prioritize", irq);
+  return OK;
+}
+
 void up_irqinitialize(void)
 {
   uint32_t regaddr;
@@ -201,8 +288,6 @@ void up_irqinitialize(void)
   irq_attach(MPS_IRQ_BUSFAULT, arm_busfault, NULL);
   irq_attach(MPS_IRQ_USAGEFAULT, arm_usagefault, NULL);
   irq_attach(MPS_IRQ_PENDSV, mps_pendsv, NULL);
-  arm_enable_dbgmonitor();
-  irq_attach(MPS_IRQ_DBGMONITOR, arm_dbgmonitor, NULL);
   irq_attach(MPS_IRQ_RESERVED, mps_reserved, NULL);
 #endif
 
