@@ -44,7 +44,7 @@
  * Public Function Prototypes
  ****************************************************************************/
 
-#ifdef CONFIG_ARCH_COVERAGE
+#ifdef CONFIG_SCHED_GCOV
 void __gcov_dump(void);
 #endif
 
@@ -66,7 +66,7 @@ extern int backtrace(void **array, int size);
 
 void host_abort(int status)
 {
-#ifdef CONFIG_ARCH_COVERAGE
+#ifdef CONFIG_SCHED_GCOV
   /* Dump gcov data. */
 
   host_uninterruptible_no_return(__gcov_dump);
