@@ -92,6 +92,19 @@ list(APPEND SRCS ${SRCSTMP})
 file(GLOB SRCSTMP ${CMAKE_CURRENT_LIST_DIR}/libcxx/src/filesystem/*.cpp)
 list(APPEND SRCS ${SRCSTMP})
 
+if(CONFIG_LIBC_LOCALE)
+  file(
+    GLOB
+    SRCSTMP
+    ${CMAKE_CURRENT_LIST_DIR}/libcxx/src/ios.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/libcxx/src/ios.instantiations.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/libcxx/src/iostream.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/libcxx/src/locale.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/libcxx/src/regex.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/libcxx/src/strstream.cpp)
+  list(REMOVE_ITEM SRCS ${SRCSTMP})
+endif()
+
 set_source_files_properties(libcxx/src/barrier.cpp PROPERTIES COMPILE_FLAGS
                                                               -Wno-shadow)
 set_source_files_properties(libcxx/src/locale.cpp PROPERTIES COMPILE_FLAGS
