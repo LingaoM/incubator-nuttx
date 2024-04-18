@@ -157,12 +157,6 @@ static int composite_classsetup(FAR struct composite_dev_s *priv,
 
   for (i = 0; i < priv->ndevices; i++)
     {
-      if ((ctrl->type & USB_REQ_TYPE_MASK) == USB_REQ_TYPE_CLASS)
-        {
-          return CLASS_SETUP(priv->device[i].dev, dev, ctrl,
-                             dataout, outlen);
-        }
-
       if (interface >= priv->device[i].compdesc.devinfo.ifnobase &&
           interface < (priv->device[i].compdesc.devinfo.ifnobase +
                        priv->device[i].compdesc.devinfo.ninterfaces))
