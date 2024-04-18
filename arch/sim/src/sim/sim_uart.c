@@ -752,6 +752,8 @@ void sim_uartinit(void)
  *
  ****************************************************************************/
 
+#ifndef CONFIG_UART_CMUX_LOG
+
 void up_nputs(const char *str, size_t len)
 {
 #ifdef USE_DEVCONSOLE
@@ -779,3 +781,5 @@ int up_putc(int ch)
 #endif
   return 0;
 }
+
+#endif /* CONFIG_UART_CMUX_LOG */
