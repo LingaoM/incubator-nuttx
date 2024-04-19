@@ -804,6 +804,11 @@ static void sensor_rpmsg_push_event_one(FAR struct sensor_rpmsg_dev_s *dev,
           break;
         }
 
+      SYSMLOG(dev->path, "%s:rpmsg push event, readcount:%d"
+              " to remote:%s i:%ld, l:%ld\n", dev->path, ret,
+              rpmsg_get_cpuname(sre->ept.rdev), state.interval,
+              state.latency);
+
       cell->len     = ret;
       cell->cookie  = stub->cookie;
       cell->nbuffer = dev->lower.nbuffer;
@@ -851,7 +856,9 @@ static ssize_t sensor_rpmsg_push_event(FAR void *priv, FAR const void *data,
 
   /* Push new data to upperhalf driver's circular buffer */
 
+  SYSMLOG(dev->path, "1 call sensor_rpmsg_push_event  size:%d", bytes);
   ret = dev->push_event(dev->upper, data, bytes);
+  SYSMLOG(dev->path, "2 call sensor_rpmsg_push_event  ret:%d", ret);
   if (ret < 0)
     {
       return ret;
@@ -924,6 +931,9 @@ static int sensor_rpmsg_adv_handler(FAR struct rpmsg_endpoint *ept,
           snerr("ERROR: adv rpmsg send failed:%s, %d, %s\n",
                 dev->path, ret, rpmsg_get_cpuname(ept->rdev));
         }
+
+      SYSMLOG(dev->path, "%s:rpmsg adv proxy success, remote:%s\n",
+              dev->path, rpmsg_get_cpuname(ept->rdev));
     }
 
   return 0;
@@ -944,6 +954,8 @@ static int sensor_rpmsg_advack_handler(FAR struct rpmsg_endpoint *ept,
             rpmsg_get_cpuname(ept->rdev));
     }
 
+  SYSMLOG(dev->path, "%s:rpmsg adv ackstub success, remote:%s\n",
+          dev->path, rpmsg_get_cpuname(ept->rdev));
   return 0;
 }
 
@@ -968,6 +980,10 @@ static int sensor_rpmsg_unadv_handler(FAR struct rpmsg_endpoint *ept,
       if (proxy->ept == ept && proxy->cookie == msg->cookie)
         {
           sensor_rpmsg_free_proxy(proxy);
+
+          SYSMLOG(dev->path,
+          "%s:rpmsg unadv free proxy success, remote:%s\n",
+                     dev->path, rpmsg_get_cpuname(ept->rdev));
           break;
         }
     }
@@ -1011,6 +1027,10 @@ static int sensor_rpmsg_sub_handler(FAR struct rpmsg_endpoint *ept,
           snerr("ERROR: sub rpmsg send failed:%s, %d, %s\n",
                 dev->path, ret, rpmsg_get_cpuname(ept->rdev));
         }
+
+      SYSMLOG(dev->path,
+      "%s:rpmsg sub alloc stub success, remote:%s\n",
+                 dev->path, rpmsg_get_cpuname(ept->rdev));
     }
 
   return 0;
@@ -1031,6 +1051,9 @@ static int sensor_rpmsg_suback_handler(FAR struct rpmsg_endpoint *ept,
       snerr("ERROR: suback failed:%s\n", dev->path);
     }
 
+  SYSMLOG(dev->path,
+          "%s:rpmsg suback success, remote:%s\n",
+              dev->path, rpmsg_get_cpuname(ept->rdev));
   return 0;
 }
 
@@ -1055,6 +1078,8 @@ static int sensor_rpmsg_unsub_handler(FAR struct rpmsg_endpoint *ept,
       if (stub->ept == ept && stub->cookie == msg->cookie)
         {
           sensor_rpmsg_free_stub(stub);
+          SYSMLOG(dev->path, "%s:rpmsg suback success, remote:%s\n",
+                  dev->path, rpmsg_get_cpuname(ept->rdev));
           break;
         }
     }
@@ -1100,6 +1125,10 @@ static int sensor_rpmsg_publish_handler(FAR struct rpmsg_endpoint *ept,
 
       dev->push_event(dev->upper, cell->data, cell->len);
 
+      SYSMLOG(dev->path, "%s:rpmsg receive data: "
+              "cnt:%"PRIu32" from remote:%s\n",
+              dev->path, cell->len, rpmsg_get_cpuname(ept->rdev));
+
       /* When the remote core publishes a message, the subscribed cores will
        * receive the message. When the subscribed core publishes a new
        * message, it will take away the message published by the remote core,
@@ -1110,6 +1139,7 @@ static int sensor_rpmsg_publish_handler(FAR struct rpmsg_endpoint *ept,
       list_for_every_entry_safe(&dev->stublist, stub, stmp,
                                 struct sensor_rpmsg_stub_s, node)
         {
+          SYSMLOG(dev->path, "read for updata stublist\n");
           file_read(&stub->file, NULL, cell->len);
         }
 
@@ -1213,6 +1243,7 @@ static void sensor_rpmsg_ns_unbind_cb(FAR struct rpmsg_endpoint *ept)
   list_for_every_entry(&g_devlist, dev,
                        struct sensor_rpmsg_dev_s, node)
     {
+      SYSMLOG(dev->path, "rpmsg ns unbind cb\n");
       sensor_rpmsg_lock(dev);
       list_for_every_entry(&dev->proxylist, proxy,
                            struct sensor_rpmsg_proxy_s, node)
@@ -1382,6 +1413,8 @@ sensor_rpmsg_register(FAR struct sensor_lowerhalf_s *lower,
       nxrmutex_unlock(&g_ept_lock);
     }
 
+  SYSMLOG(dev->path, "rpmsg register\n");
+
   return &dev->lower;
 }
 
@@ -1404,6 +1437,8 @@ void sensor_rpmsg_unregister(FAR struct sensor_lowerhalf_s *lower)
     {
       return;
     }
+
+  SYSMLOG(dev->path, "rpmsg unregister\n");
 
   nxrmutex_lock(&g_dev_lock);
   list_delete(&dev->node);
