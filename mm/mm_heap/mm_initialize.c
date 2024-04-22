@@ -75,6 +75,80 @@ static FAR void *mempool_memalign(FAR void *arg, size_t alignment,
 #  define mempool_memalign mm_memalign
 #endif
 
+#ifdef CONFIG_MM_DUMP_ON_FAILURE
+#  if CONFIG_MM_BACKTRACE >= 0
+static void mm_dump_handler(FAR struct tcb_s *tcb, FAR void *arg)
+{
+  struct mallinfo_task info;
+  struct malltask task;
+
+  task.pid = tcb ? tcb->pid : PID_MM_LEAK;
+  task.seqmin = 0;
+  task.seqmax = ULONG_MAX;
+  info = mm_mallinfo_task(arg, &task);
+  mwarn("pid:%5d, used:%10d, nused:%10d\n",
+        task.pid, info.uordblks, info.aordblks);
+}
+#  endif
+
+#  if CONFIG_MM_HEAP_MEMPOOL_THRESHOLD != 0
+static void mm_mempool_dump_handle(FAR struct mempool_s *pool, FAR void *arg)
+{
+  struct mempoolinfo_s info;
+
+  mempool_info(pool, &info);
+  mwarn("%9lu%11lu%9lu%9lu%9lu%9lu\n",
+        info.sizeblks, info.arena, info.aordblks,
+        info.ordblks, info.iordblks, info.nwaiter);
+}
+#  endif
+
+static int mm_panic_dump(FAR struct notifier_block *nb, unsigned long action,
+                          FAR void *data)
+{
+  FAR struct mm_heap_s *heap = (FAR struct mm_heap_s *)
+                                container_of(nb, struct mm_heap_s, nb);
+  struct mallinfo minfo;
+#  ifdef CONFIG_MM_DUMP_DETAILS_ON_FAILURE
+  struct mm_memdump_s dump =
+  {
+    PID_MM_ALLOC,
+#    if CONFIG_MM_BACKTRACE >= 0
+    0, ULONG_MAX
+#    endif
+  };
+#  endif
+
+  if (action == PANIC_KERNEL && heap->oom == true)
+    {
+      minfo = mm_mallinfo(heap);
+      mwarn("Total:%d, used:%d, free:%d, largest:%d, nused:%d, nfree:%d\n",
+            minfo.arena, minfo.uordblks, minfo.fordblks,
+            minfo.mxordblk, minfo.aordblks, minfo.ordblks);
+#  if CONFIG_MM_BACKTRACE >= 0
+      nxsched_foreach(mm_dump_handler, heap);
+      mm_dump_handler(NULL, heap);
+#  endif
+#  if CONFIG_MM_HEAP_MEMPOOL_THRESHOLD != 0
+      mwarn("%11s%9s%9s%9s%9s%9s\n",
+            "bsize", "total", "nused",
+            "nfree", "nifree", "nwaiter");
+      mempool_multiple_foreach(heap->mm_mpool,
+                               mm_mempool_dump_handle, NULL);
+#  endif
+#  ifdef CONFIG_MM_DUMP_DETAILS_ON_FAILURE
+      mm_memdump(heap, &dump);
+      mwarn("Dump leak memory(thread exit, but memory not free):\n");
+      dump.pid = PID_MM_LEAK;
+      mm_memdump(heap, &dump);
+#  endif
+    }
+
+  return 0;
+}
+
+#endif
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -293,6 +367,12 @@ FAR struct mm_heap_s *mm_initialize(FAR const char *name,
                               CONFIG_MM_HEAP_MEMPOOL_CHUNK_SIZE,
                               CONFIG_MM_HEAP_MEMPOOL_EXPAND_SIZE,
                               CONFIG_MM_HEAP_MEMPOOL_DICTIONARY_EXPAND_SIZE);
+#endif
+
+#ifdef CONFIG_MM_PANIC_ON_FAILURE
+  heap->nb.notifier_call = mm_panic_dump;
+  heap->oom = false;
+  panic_notifier_chain_register(&heap->nb);
 #endif
 
   return heap;

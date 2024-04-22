@@ -32,6 +32,7 @@
 #include <nuttx/fs/procfs.h>
 #include <nuttx/lib/math32.h>
 #include <nuttx/mm/mempool.h>
+#include <nuttx/panic_notifier.h>
 
 #include <assert.h>
 #include <sys/types.h>
@@ -272,6 +273,11 @@ struct mm_heap_s
 
 #if defined(CONFIG_FS_PROCFS) && !defined(CONFIG_FS_PROCFS_EXCLUDE_MEMINFO)
   struct procfs_meminfo_entry_s mm_procfs;
+#endif
+
+#ifdef CONFIG_MM_PANIC_ON_FAILURE
+  struct notifier_block nb; /* Panic notifier if cuase malloc filed panic */
+  bool oom;
 #endif
 };
 

@@ -324,41 +324,9 @@ FAR void *mm_malloc(FAR struct mm_heap_s *heap, size_t size)
 #ifdef CONFIG_DEBUG_MM
   else if (MM_INTERNAL_HEAP(heap))
     {
-#ifdef CONFIG_MM_DUMP_ON_FAILURE
-      struct mallinfo minfo;
-#  ifdef CONFIG_MM_DUMP_DETAILS_ON_FAILURE
-      struct mm_memdump_s dump =
-      {
-        PID_MM_ALLOC, 0, ULONG_MAX
-      };
-#  endif
-#endif
-
       mwarn("WARNING: Allocation failed, size %zu\n", alignsize);
-#ifdef CONFIG_MM_DUMP_ON_FAILURE
-      minfo = mm_mallinfo(heap);
-      mwarn("Total:%d, used:%d, free:%d, largest:%d, nused:%d, nfree:%d\n",
-            minfo.arena, minfo.uordblks, minfo.fordblks,
-            minfo.mxordblk, minfo.aordblks, minfo.ordblks);
-#  if CONFIG_MM_BACKTRACE >= 0
-      nxsched_foreach(mm_dump_handler, heap);
-      mm_dump_handler(NULL, heap);
-#  endif
-#  if CONFIG_MM_HEAP_MEMPOOL_THRESHOLD != 0
-      mwarn("%11s%9s%9s%9s%9s%9s\n",
-            "bsize", "total", "nused",
-            "nfree", "nifree", "nwaiter");
-      mempool_multiple_foreach(heap->mm_mpool,
-                               mm_mempool_dump_handle, NULL);
-#  endif
-#  ifdef CONFIG_MM_DUMP_DETAILS_ON_FAILURE
-      mm_memdump(heap, &dump);
-      mwarn("Dump leak memory(thread exit, but memory not free):\n");
-      dump.pid = PID_MM_LEAK;
-      mm_memdump(heap, &dump);
-#  endif
-#endif
 #ifdef CONFIG_MM_PANIC_ON_FAILURE
+      heap->oom = true;
       PANIC();
 #endif
     }
