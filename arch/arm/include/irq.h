@@ -95,6 +95,8 @@ extern "C"
 EXTERN volatile uint32_t *g_current_regs[CONFIG_SMP_NCPUS];
 #define CURRENT_REGS (g_current_regs[up_cpu_index()])
 
+extern struct tcb_s *g_running_tasks[CONFIG_SMP_NCPUS];
+
 /****************************************************************************
  * Public Function Prototypes
  ****************************************************************************/
@@ -126,14 +128,70 @@ int up_cpu_index(void) noinstrument_function ;
  ****************************************************************************/
 
 /****************************************************************************
- * Name: up_interrupt_context
+ * Name: up_running_task
  *
  * Description:
- *   Return true is we are currently executing in the interrupt
- *   handler context.
+ *   Return a reference to the TCB of the currently executing task.  This
+ *   function is intended for use in exception handling logic where it is
+ *   necessary to access the TCB of the currently executing task.
+ *
+ * Input Parameters:
+ *   None
+ *
+ * Returned Value:
+ *   A reference to the TCB of the currently executing task.
  *
  ****************************************************************************/
 
+static inline struct tcb_s *up_running_task(void)
+{
+  return (struct tcb_s *)g_running_tasks[up_cpu_index()];
+}
+
+/****************************************************************************
+ * Name: up_set_running_task
+ *
+ * Description:
+ *  Save the task associated with the currently executing CPU.  This
+ *  function is intended for use in exception handling logic where it is
+ *  necessary to access the TCB of the currently executing task.
+ *
+ * Input Parameters:
+ *  task - A reference to the TCB of the currently executing task.
+ *       This may be NULL only in the case where the CPU is not
+ *       currently executing any task (i.e., only during early boot-up).
+ *
+ * Returned Value:
+ *   None
+ *
+ ****************************************************************************/
+
+static inline void up_set_running_task(struct tcb_s *task)
+{
+  g_running_tasks[up_cpu_index()] = task;
+}
+
+/****************************************************************************
+ * Name: up_interrupt_context
+ *
+ * Description:
+ *  Return true if the CPU is currently executing in interrupt context.
+ *
+ * Input Parameters:
+ *  None
+ *
+ * Returned Value:
+ *   true if the CPU is currently executing in interrupt context.
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_ARCH_ARMV7M
+noinstrument_function
+static inline bool up_interrupt_context(void)
+{
+  return getipsr() != 0;
+}
+#else
 noinstrument_function
 static inline bool up_interrupt_context(void)
 {
@@ -149,6 +207,7 @@ static inline bool up_interrupt_context(void)
 
   return ret;
 }
+#endif
 #endif /* __ASSEMBLY__ */
 
 #undef EXTERN

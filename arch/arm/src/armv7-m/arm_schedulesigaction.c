@@ -103,7 +103,7 @@ void up_schedule_sigaction(struct tcb_s *tcb, sig_deliver_t sigdeliver)
            * signaling itself for some reason.
            */
 
-          if (!CURRENT_REGS)
+          if (!up_interrupt_context())
             {
               /* In this case just deliver the signal now.
                * REVISIT:  Signal handle will run in a critical section!

@@ -35,10 +35,35 @@
 
 #include "arm_internal.h"
 #include "exc_return.h"
+#include "nvic.h"
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
+
+void arm_vector_doirq(void)
+{
+  struct tcb_s *rtcb = this_task_irq();
+  int irq = getipsr();
+  int flags;
+
+  flags = up_irq_save();
+
+  if (up_running_task() == NULL)
+    {
+      up_set_running_task(this_task_irq());
+    }
+
+  up_irq_restore(flags);
+
+  arm_ack_irq(irq);
+  irq_dispatch(irq, NULL);
+
+  if (rtcb != this_task_irq())
+    {
+      up_trigger_irq(NVIC_IRQ_PENDSV, 0);
+    }
+}
 
 uint32_t *arm_doirq(int irq, uint32_t *regs)
 {
@@ -47,43 +72,37 @@ uint32_t *arm_doirq(int irq, uint32_t *regs)
   PANIC();
 #else
 
-  if (regs[REG_EXC_RETURN] & EXC_RETURN_THREAD_MODE)
-    {
-      CURRENT_REGS = regs;
-    }
-
   /* Acknowledge the interrupt */
 
   arm_ack_irq(irq);
 
-  /* Deliver the IRQ */
-
-  irq_dispatch(irq, regs);
-
-  /* If a context switch occurred while processing the interrupt then
-   * CURRENT_REGS may have change value.  If we return any value different
-   * from the input regs, then the lower level will know that a context
-   * switch occurred during interrupt processing.
-   */
-
-  if (regs[REG_EXC_RETURN] & EXC_RETURN_THREAD_MODE)
+  if (irq == NVIC_IRQ_PENDSV)
     {
-      /* Restore the cpu lock */
+      int flags;
 
-      if (regs != CURRENT_REGS)
-        {
-          /* Record the new "running" task when context switch occurred.
-           * g_running_tasks[] is only used by assertion logic for reporting
-           * crashes.
-           */
+      flags = up_irq_save();
 
-          g_running_tasks[this_cpu()] = this_task();
+      up_running_task()->xcp.regs = regs;
+      regs = this_task_irq()->xcp.regs;
+      up_set_running_task(NULL);
 
-          restore_critical_section();
-          regs = (uint32_t *)CURRENT_REGS;
-        }
+      up_irq_restore(flags);
+    }
+  else
+    {
+      CURRENT_REGS = regs;
 
-      /* Update the CURRENT_REGS to NULL. */
+      up_set_running_task(this_task_irq());
+      up_running_task()->xcp.regs = regs;
+
+      /* Deliver the IRQ */
+
+      irq_dispatch(irq, regs);
+
+      /* Return to thread mode, restore newest thread regs */
+
+      regs = (uint32_t *)CURRENT_REGS;
+      up_set_running_task(NULL);
 
       CURRENT_REGS = NULL;
     }
