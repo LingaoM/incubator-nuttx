@@ -952,10 +952,15 @@ static int sensor_rpmsg_advack_handler(FAR struct rpmsg_endpoint *ept,
       sensor_rpmsg_advsub_one(dev, ept, SENSOR_RPMSG_UNADVERTISE);
       snerr("ERROR: advack failed:%s, %s\n", dev->path,
             rpmsg_get_cpuname(ept->rdev));
+      return 0;
     }
 
-  SYSMLOG(dev->path, "%s:rpmsg adv ackstub success, remote:%s\n",
-          dev->path, rpmsg_get_cpuname(ept->rdev));
+  if (dev)
+    {
+      SYSMLOG(dev->path, "%s:rpmsg adv ackstub success, remote:%s\n",
+              dev->path, rpmsg_get_cpuname(ept->rdev));
+    }
+
   return 0;
 }
 
@@ -1049,11 +1054,16 @@ static int sensor_rpmsg_suback_handler(FAR struct rpmsg_endpoint *ept,
     {
       sensor_rpmsg_advsub_one(dev, ept, SENSOR_RPMSG_UNSUBSCRIBE);
       snerr("ERROR: suback failed:%s\n", dev->path);
+      return 0;
     }
 
-  SYSMLOG(dev->path,
-          "%s:rpmsg suback success, remote:%s\n",
-              dev->path, rpmsg_get_cpuname(ept->rdev));
+  if (dev)
+    {
+      SYSMLOG(dev->path,
+              "%s:rpmsg suback success, remote:%s\n",
+                  dev->path, rpmsg_get_cpuname(ept->rdev));
+    }
+
   return 0;
 }
 

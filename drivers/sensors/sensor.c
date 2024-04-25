@@ -1275,7 +1275,7 @@ int sensor_custom_register(FAR struct sensor_lowerhalf_s *lower,
 
   upper->state.nbuffer = lower->nbuffer;
   upper->lower = lower;
-  strcpy(upper->path, path);
+  strlcpy(upper->path, path, PATH_MAX);
   SYSMLOG(path, "Registering %s\n", path);
   ret = register_driver(path, &g_sensor_fops, 0666, upper);
   if (ret)
