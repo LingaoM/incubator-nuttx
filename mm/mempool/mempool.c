@@ -23,6 +23,7 @@
  ****************************************************************************/
 
 #include <assert.h>
+#include <debug.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <syslog.h>
@@ -85,11 +86,16 @@ static inline void mempool_add_queue(FAR sq_queue_t *queue,
 
 #if CONFIG_MM_BACKTRACE >= 0
 static inline void mempool_add_backtrace(FAR struct mempool_s *pool,
-                                         FAR struct mempool_backtrace_s *buf)
+                                         FAR struct mempool_backtrace_s *buf,
+                                         bool alloc)
 {
-  list_add_head(&pool->alist, &buf->node);
-  buf->pid = _SCHED_GETTID();
-  buf->seqno = g_mm_seqno++;
+  if (alloc)
+    {
+      list_add_head(&pool->alist, &buf->node);
+      buf->pid = _SCHED_GETTID();
+      buf->seqno = g_mm_seqno++;
+    }
+
 #  if CONFIG_MM_BACKTRACE > 0
   if (pool->procfs.backtrace)
     {
@@ -106,6 +112,28 @@ static inline void mempool_add_backtrace(FAR struct mempool_s *pool,
       buf->backtrace[0] = NULL;
     }
 #  endif
+}
+
+static inline void mempool_dumpbuf(FAR struct mempool_backtrace_s *buf,
+                                   size_t blocksize)
+{
+  char tmp[CONFIG_MM_BACKTRACE * MM_PTR_FMT_WIDTH + 1] = "";
+
+#  if CONFIG_MM_BACKTRACE > 0
+  FAR const char *format = " %0*p";
+  int i;
+
+  for (i = 0; i < CONFIG_MM_BACKTRACE && buf->backtrace[i]; i++)
+    {
+      snprintf(tmp + i * MM_PTR_FMT_WIDTH,
+               sizeof(tmp) - i * MM_PTR_FMT_WIDTH,
+               format, MM_PTR_FMT_WIDTH - 1, buf->backtrace[i]);
+    }
+#  endif
+
+  minfo("%6d%12zu%12lu%*p%s\n",
+        buf->pid, blocksize, buf->seqno,
+        MM_PTR_FMT_WIDTH, ((FAR char *)buf - blocksize), tmp);
 }
 #endif
 
@@ -279,7 +307,7 @@ retry:
 
 #if CONFIG_MM_BACKTRACE >= 0
   mempool_add_backtrace(pool, (FAR struct mempool_backtrace_s *)
-                              ((FAR char *)blk + pool->blocksize));
+                              ((FAR char *)blk + pool->blocksize), true);
 #else
   pool->nalloc++;
 #endif
@@ -310,8 +338,16 @@ void mempool_release(FAR struct mempool_s *pool, FAR void *blk)
 
   /* Check double free */
 
+  if (!list_in_list(&buf->node))
+    {
+      merr("ERROR: Double free detected, last free is:\n");
+      mempool_dumpbuf(buf, blocksize);
+      PANIC();
+    }
+
   DEBUGASSERT(list_in_list(&buf->node));
   list_delete(&buf->node);
+  mempool_add_backtrace(pool, buf, false);
 #else
   pool->nalloc--;
 #endif
@@ -506,23 +542,7 @@ void mempool_memdump(FAR struct mempool_s *pool,
                MM_DUMP_LEAK(dump->pid, buf->pid)) &&
               buf->seqno >= dump->seqmin && buf->seqno <= dump->seqmax)
             {
-              char tmp[CONFIG_MM_BACKTRACE * MM_PTR_FMT_WIDTH + 1] = "";
-
-#  if CONFIG_MM_BACKTRACE > 0
-              FAR const char *format = " %0*p";
-              int i;
-
-              for (i = 0; i < CONFIG_MM_BACKTRACE && buf->backtrace[i]; i++)
-                {
-                  snprintf(tmp + i * MM_PTR_FMT_WIDTH,
-                           sizeof(tmp) - i * MM_PTR_FMT_WIDTH,
-                           format, MM_PTR_FMT_WIDTH - 1, buf->backtrace[i]);
-                }
-#  endif
-
-              syslog(LOG_INFO, "%6d%12zu%12lu%*p%s\n",
-                     buf->pid, blocksize, buf->seqno,
-                     MM_PTR_FMT_WIDTH, ((FAR char *)buf - blocksize), tmp);
+              mempool_dumpbuf(buf, blocksize);
             }
         }
     }
