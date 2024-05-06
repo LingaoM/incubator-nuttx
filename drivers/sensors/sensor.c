@@ -108,7 +108,6 @@ struct sensor_upperhalf_s
   struct circbuf_s   buffer;             /* The circular buffer of data */
   rmutex_t           lock;               /* Manages exclusive access to file operations */
   struct list_node   userlist;           /* List of users */
-  char               path[PATH_MAX];
 };
 
 /****************************************************************************
@@ -133,12 +132,6 @@ static ssize_t sensor_push_event(FAR void *priv, FAR const void *data,
 /****************************************************************************
  * Private Data
  ****************************************************************************/
-
-static const char *g_monitor_tbl[] =
-{
-  "/dev/uorb/cpevent0",
-  NULL,
-};
 
 static const struct sensor_axis_map_s g_remap_tbl[] =
 {
@@ -262,10 +255,6 @@ static int sensor_update_interval(FAR struct file *filep,
         {
           unsigned long expected_interval = min_interval;
           ret = lower->ops->set_interval(lower, filep, &min_interval);
-
-          SYSMLOG(upper->path, "update interval %s, %lu\n",
-                  upper->path, min_interval);
-
           if (ret < 0)
             {
               return ret;
@@ -286,9 +275,6 @@ static int sensor_update_interval(FAR struct file *filep,
           (min_interval != upper->state.min_interval && min_latency)))
         {
           ret = lower->ops->batch(lower, filep, &min_latency);
-          SYSMLOG(upper->path, "update batch %s, %lu\n",
-                  upper->path, min_latency);
-
           if (ret >= 0)
             {
               upper->state.min_latency = min_latency;
@@ -356,10 +342,6 @@ update:
   if (lower->ops->batch)
     {
       ret = lower->ops->batch(lower, filep, &min_latency);
-
-      SYSMLOG(upper->path, "update batch %s, %lu\n",
-              upper->path, min_latency);
-
       if (ret < 0)
         {
           return ret;
@@ -463,8 +445,8 @@ static ssize_t sensor_do_samples(FAR struct sensor_upperhalf_s *upper,
       if (buffer != NULL)
         {
           ret = circbuf_peekat(&upper->buffer,
-                               user->bufferpos * upper->state.esize,
-                               buffer, len);
+                        user->bufferpos * upper->state.esize,
+                        buffer, len);
         }
       else
         {
@@ -531,7 +513,6 @@ static ssize_t sensor_do_samples(FAR struct sensor_upperhalf_s *upper,
 
           user->bufferpos = pos;
           user->state.generation += user->state.interval;
-
           if (ret >= len)
             {
               break;
@@ -611,8 +592,6 @@ static int sensor_open(FAR struct file *filep)
         }
 
       upper->state.nsubscribers++;
-      SYSMLOG(upper->path, "a new subscriber %s, %lu\n",
-              upper->path, upper->state.nsubscribers);
     }
 
   if (filep->f_oflags & O_WROK)
@@ -622,9 +601,6 @@ static int sensor_open(FAR struct file *filep)
         {
           lower->persist = true;
         }
-
-      SYSMLOG(upper->path, "a new advertiser %s, %lu\n",
-              upper->path, upper->state.nadvertisers);
     }
 
   if (upper->state.generation && lower->persist)
@@ -689,16 +665,11 @@ static int sensor_close(FAR struct file *filep)
         {
           lower->ops->activate(lower, filep, false);
         }
-
-      SYSMLOG(upper->path, "close subscriber %s, %lu\n",
-              upper->path, upper->state.nsubscribers);
     }
 
   if (filep->f_oflags & O_WROK)
     {
       upper->state.nadvertisers--;
-      SYSMLOG(upper->path, "close advertiser %s, %lu\n",
-              upper->path, upper->state.nadvertisers);
     }
 
   list_delete(&user->node);
@@ -964,7 +935,6 @@ static int sensor_poll(FAR struct file *filep,
 
       user->fds = fds;
       fds->priv = filep;
-
       if (lower->ops->fetch)
         {
           /* Always return POLLIN for fetch data directly(non-block) */
@@ -1044,9 +1014,6 @@ static ssize_t sensor_push_event(FAR void *priv, FAR const void *data,
         }
     }
 
-  SYSMLOG(upper->path, " %s:push event, envcount:%lu\n",
-          upper->path, envcount);
-
   circbuf_overwrite(&upper->buffer, data, bytes);
   sensor_generate_timing(upper, envcount);
   list_for_every_entry(&upper->userlist, user, struct sensor_user_s, node)
@@ -1086,29 +1053,6 @@ static void sensor_notify_event(FAR void *priv)
     }
 
   nxrmutex_unlock(&upper->lock);
-}
-
-bool sensor_is_monitor(FAR const char *path)
-{
-  int i;
-  for (i = 0; g_monitor_tbl[i]; i++)
-    {
-      if (strcmp(path, g_monitor_tbl[i]) == 0)
-        {
-          return true;
-        }
-    }
-
-  return false;
-}
-
-uint64_t sensor_absolute_time(void)
-{
-  struct timespec ts;
-
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-
-  return 1000000ull * ts.tv_sec + ts.tv_nsec / 1000;
 }
 
 /****************************************************************************
@@ -1275,8 +1219,7 @@ int sensor_custom_register(FAR struct sensor_lowerhalf_s *lower,
 
   upper->state.nbuffer = lower->nbuffer;
   upper->lower = lower;
-  strlcpy(upper->path, path, PATH_MAX);
-  SYSMLOG(path, "Registering %s\n", path);
+  sninfo("Registering %s\n", path);
   ret = register_driver(path, &g_sensor_fops, 0666, upper);
   if (ret)
     {
@@ -1347,7 +1290,7 @@ void sensor_custom_unregister(FAR struct sensor_lowerhalf_s *lower,
 
   upper = lower->priv;
 
-  SYSMLOG(upper->path, "UnRegistering %s\n", path);
+  sninfo("UnRegistering %s\n", path);
   unregister_driver(path);
 
 #ifdef CONFIG_SENSORS_RPMSG

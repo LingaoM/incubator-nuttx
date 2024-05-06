@@ -28,7 +28,6 @@
 #include <nuttx/config.h>
 
 #include <sys/types.h>
-#include <sys/time.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <time.h>
@@ -36,15 +35,6 @@
 #include <nuttx/fs/fs.h>
 #include <nuttx/sensors/ioctl.h>
 #include <nuttx/clock.h>
-
-#define SYSMLOG_ON
-
-#ifdef SYSMLOG_ON
-# define SYSMLOG(p, s, ...) if(sensor_is_monitor(p)) \
-    {syslog(1, "[%s:%d->%s]### uORB:%s "s, __FILE__, __LINE__, __func__, p, ##__VA_ARGS__);}
-#else
-# define SYSMLOG(p, s, ...)
-#endif
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -1186,8 +1176,6 @@ extern "C"
 #else
 #define EXTERN extern
 #endif
-
-bool sensor_is_monitor(FAR const char *path);
 
 /****************************************************************************
  * Name: sensor_remap_vector_raw16
