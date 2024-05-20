@@ -82,7 +82,11 @@ uint32_t *arm_doirq(int irq, uint32_t *regs)
 
       flags = up_irq_save();
 
-      up_running_task()->xcp.regs = regs;
+      if (up_running_task() != NULL)
+        {
+          up_running_task()->xcp.regs = regs;
+        }
+
       regs = this_task_irq()->xcp.regs;
       up_set_running_task(NULL);
 
