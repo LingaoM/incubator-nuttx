@@ -1280,6 +1280,7 @@ static ssize_t proc_groupfd(FAR struct proc_file_s *procfile,
           char buf[CONFIG_FS_BACKTRACE * BACKTRACE_WIDTH + 1] = "";
           char path[PATH_MAX];
 #if CONFIG_FS_BACKTRACE > 0
+          FAR const char *format = " %0*p";
           int k;
 #endif
 
@@ -1300,7 +1301,7 @@ static ssize_t proc_groupfd(FAR struct proc_file_s *procfile,
             {
               snprintf(buf + k * BACKTRACE_WIDTH,
                        sizeof(buf) - k * BACKTRACE_WIDTH,
-                       " %0*p", BACKTRACE_WIDTH - 1,
+                       format, BACKTRACE_WIDTH - 1,
                        file->backtrace[k]);
             }
 #endif
