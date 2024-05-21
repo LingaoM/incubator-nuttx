@@ -210,6 +210,12 @@ static int nx_dup3_from_tcb(FAR struct tcb_s *tcb, int fd1, int fd2,
   FAR struct filelist *list;
   FAR struct file *filep;
   FAR struct file  file;
+#ifdef CONFIG_FDCHECK
+  uint8_t f_tag_fdcheck;
+#endif
+#ifdef CONFIG_FDSAN
+  uint64_t f_tag_fdsan;
+#endif
   int count;
   int ret;
 
@@ -245,23 +251,44 @@ static int nx_dup3_from_tcb(FAR struct tcb_s *tcb, int fd1, int fd2,
     }
 
   filep = files_fget(list, fd2);
+  if (filep == NULL)
+    {
+      return -EBADF;
+    }
+
+#ifdef CONFIG_FDSAN
+  f_tag_fdsan = filep->f_tag_fdsan;
+#endif
+
+#ifdef CONFIG_FDCHECK
+  f_tag_fdcheck = filep->f_tag_fdcheck;
+#endif
+
   memcpy(&file, filep, sizeof(struct file));
   memset(filep, 0,     sizeof(struct file));
 
   /* Perform the dup3 operation */
 
   ret = file_dup3(files_fget(list, fd1), filep, flags);
+  if (ret < 0)
+    {
+      return ret;
+    }
 
 #ifdef CONFIG_FDSAN
-  filep->f_tag = file.f_tag;
+  filep->f_tag_fdsan = f_tag_fdsan;
+#endif
+
+#ifdef CONFIG_FDCHECK
+  filep->f_tag_fdcheck = f_tag_fdcheck;
 #endif
 
   file_close(&file);
 
 #ifdef CONFIG_FDCHECK
-  return ret < 0 ? ret : fdcheck_protect(fd2);
+  return fdcheck_protect(fd2);
 #else
-  return ret < 0 ? ret : fd2;
+  return fd2;
 #endif
 }
 
