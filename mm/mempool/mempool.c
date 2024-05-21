@@ -92,10 +92,10 @@ static inline void mempool_add_backtrace(FAR struct mempool_s *pool,
   if (alloc)
     {
       list_add_head(&pool->alist, &buf->node);
-      buf->pid = _SCHED_GETTID();
       buf->seqno = g_mm_seqno++;
     }
 
+  buf->pid = _SCHED_GETTID();
 #  if CONFIG_MM_BACKTRACE > 0
   if (pool->procfs.backtrace)
     {
