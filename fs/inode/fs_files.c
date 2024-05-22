@@ -133,7 +133,7 @@ static int files_extend(FAR struct filelist *list, size_t row)
 
       for (j = orig_rows; j < i; j++)
         {
-          kmm_free(files[i]);
+          kmm_free(files[j]);
         }
 
       kmm_free(files);
