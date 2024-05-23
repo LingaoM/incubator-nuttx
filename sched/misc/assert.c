@@ -72,6 +72,12 @@
 
 #define DUMP_PTR(p, x) ((uintptr_t)(&(p)[(x)]) < stack_top ? (p)[(x)] : 0)
 
+#if defined(CONFIG_BOARD_COREDUMP_SYSLOG) || defined(CONFIG_BOARD_COREDUMP_BLKDEV)
+#define FATAL_ASSERT_MAX_TIMES 3
+#else
+#define FATAL_ASSERT_MAX_TIMES 2
+#endif
+
 /****************************************************************************
  * Private Data
  ****************************************************************************/
@@ -532,19 +538,6 @@ void _assert(FAR const char *filename, int linenum,
 
   sched_lock();
 
-  if (g_fatal_assert >= 2)
-    {
-      goto reset;
-    }
-
-  /* try to save current context if regs is null */
-
-  if (regs == NULL)
-    {
-      up_saveusercontext(g_last_regs);
-      regs = g_last_regs;
-    }
-
 #if CONFIG_BOARD_RESET_ON_ASSERT < 2
   if (!up_interrupt_context() &&
       (rtcb->flags & TCB_FLAG_TTYPE_MASK) != TCB_FLAG_TTYPE_KERNEL)
@@ -555,6 +548,25 @@ void _assert(FAR const char *filename, int linenum,
 #endif
     {
       g_fatal_assert++;
+    }
+
+  if (g_fatal_assert >= FATAL_ASSERT_MAX_TIMES)
+    {
+      goto reset;
+    }
+#if defined(CONFIG_BOARD_COREDUMP_SYSLOG) || defined(CONFIG_BOARD_COREDUMP_BLKDEV)
+  else if (g_fatal_assert >= FATAL_ASSERT_MAX_TIMES - 1)
+    {
+      goto docoredump;
+    }
+#endif
+
+  /* try to save current context if regs is null */
+
+  if (regs == NULL)
+    {
+      up_saveusercontext(g_last_regs);
+      regs = g_last_regs;
     }
 
   notifier_data.rtcb = rtcb;
@@ -638,6 +650,8 @@ void _assert(FAR const char *filename, int linenum,
 
 #if defined(CONFIG_BOARD_COREDUMP_SYSLOG) || \
     defined(CONFIG_BOARD_COREDUMP_BLKDEV)
+docoredump:
+
       /* Dump core information */
 
 #  ifdef CONFIG_BOARD_COREDUMP_FULL
