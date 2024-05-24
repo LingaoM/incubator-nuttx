@@ -90,16 +90,10 @@ class Nxsetregs(gdb.Command):
                 gdb.lookup_type("char").pointer()
             )
         else:
-            if utils.is_target_smp():
-                gdb.execute("set $_index=up_cpu_index()")
-                index = gdb.parse_and_eval("$_index")
-            else:
-                index = 0
-
-            if current_regs[index] == 0:
-                return
-
-            regs = current_regs[index].cast(gdb.lookup_type("char").pointer())
+            regs = current_regs.cast(gdb.lookup_type("char").pointer())
+            gdb.execute("set $_current_regs=tcbinfo_current_regs()")
+            current_regs = gdb.parse_and_eval("$_current_regs")
+            regs = current_regs.cast(gdb.lookup_type("char").pointer())
 
         if regs == 0:
             gdb.write("regs is NULL\n")
