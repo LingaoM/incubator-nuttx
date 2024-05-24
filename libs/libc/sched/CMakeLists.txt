@@ -18,13 +18,8 @@
 #
 # ##############################################################################
 
-set(SRCS
-    sched_getprioritymax.c
-    sched_getprioritymin.c
-    clock_ticks2time.c
-    clock_time2ticks.c
-    clock_getcpuclockid.c
-    clock_getres.c)
+set(SRCS sched_getprioritymax.c sched_getprioritymin.c clock_getcpuclockid.c
+         clock_getres.c)
 
 if(NOT CONFIG_CANCELLATION_POINTS)
   list(APPEND SRCS task_setcanceltype.c task_testcancel.c)
