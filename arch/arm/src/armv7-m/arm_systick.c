@@ -26,6 +26,7 @@
 
 #include <nuttx/arch.h>
 #include <nuttx/irq.h>
+#include <nuttx/spinlock.h>
 
 #include <stdio.h>
 
@@ -87,6 +88,8 @@ static struct systick_lowerhalf_s g_systick_lower =
   .ops = &g_systick_ops,
 };
 
+static spinlock_t g_systick_lock;
+
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
@@ -135,7 +138,7 @@ static int systick_getstatus(struct timer_lowerhalf_s *lower_,
                              struct timer_status_s *status)
 {
   struct systick_lowerhalf_s *lower = (struct systick_lowerhalf_s *)lower_;
-  irqstate_t flags = enter_critical_section();
+  irqstate_t flags = spin_lock_irqsave(&g_systick_lock);
 
   status->flags    = lower->callback ? TCFLAGS_HANDLER : 0;
   status->flags   |= systick_is_running() ? TCFLAGS_ACTIVE : 0;
@@ -161,7 +164,7 @@ static int systick_getstatus(struct timer_lowerhalf_s *lower_,
       status->timeleft = status->timeout;
     }
 
-  leave_critical_section(flags);
+  spin_unlock_irqrestore(&g_systick_lock, flags);
   return 0;
 }
 
@@ -170,7 +173,7 @@ static int systick_settimeout(struct timer_lowerhalf_s *lower_,
 {
   struct systick_lowerhalf_s *lower = (struct systick_lowerhalf_s *)lower_;
 
-  irqstate_t flags = enter_critical_section();
+  irqstate_t flags = spin_lock_irqsave(&g_systick_lock);
   if (lower->next_interval)
     {
       /* If the timer callback is in the process,
@@ -194,7 +197,7 @@ static int systick_settimeout(struct timer_lowerhalf_s *lower_,
         }
     }
 
-  leave_critical_section(flags);
+  spin_unlock_irqrestore(&g_systick_lock, flags);
   return 0;
 }
 
@@ -203,10 +206,10 @@ static void systick_setcallback(struct timer_lowerhalf_s *lower_,
 {
   struct systick_lowerhalf_s *lower = (struct systick_lowerhalf_s *)lower_;
 
-  irqstate_t flags = enter_critical_section();
+  irqstate_t flags = spin_lock_irqsave(&g_systick_lock);
   lower->callback  = callback;
   lower->arg       = arg;
-  leave_critical_section(flags);
+  spin_unlock_irqrestore(&g_systick_lock, flags);
 }
 
 static int systick_maxtimeout(struct timer_lowerhalf_s *lower_,
