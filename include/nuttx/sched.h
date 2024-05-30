@@ -639,9 +639,13 @@ struct tcb_s
 
 #ifdef CONFIG_SCHED_CRITMONITOR
   clock_t premp_start;             /* Time when preemption disabled   */
+  void   *premp_caller;            /* Caller of preemption disabled   */
   clock_t premp_max;               /* Max time preemption disabled    */
+  void   *premp_max_caller;        /* Caller of max preemption        */
   clock_t crit_start;              /* Time critical section entered   */
+  void   *crit_caller;             /* Caller of critical section      */
   clock_t crit_max;                /* Max time in critical section    */
+  void   *crit_max_caller;         /* Caller of max critical section  */
   clock_t run_start;               /* Time when thread begin run      */
   clock_t run_max;                 /* Max time thread run             */
   clock_t run_time;                /* Total time thread run           */

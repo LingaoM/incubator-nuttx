@@ -389,7 +389,7 @@ try_again_in_irq:
               /* Note that we have entered the critical section */
 
 #ifdef CONFIG_SCHED_CRITMONITOR
-              nxsched_critmon_csection(rtcb, true);
+              nxsched_critmon_csection(rtcb, true, return_address(0));
 #endif
 #ifdef CONFIG_SCHED_INSTRUMENTATION_CSECTION
               sched_note_csection(rtcb, true);
@@ -432,7 +432,7 @@ irqstate_t enter_critical_section(void)
           /* Note that we have entered the critical section */
 
 #ifdef CONFIG_SCHED_CRITMONITOR
-          nxsched_critmon_csection(rtcb, true);
+          nxsched_critmon_csection(rtcb, true, return_address(0));
 #endif
 #ifdef CONFIG_SCHED_INSTRUMENTATION_CSECTION
           sched_note_csection(rtcb, true);
@@ -539,7 +539,7 @@ void leave_critical_section(irqstate_t flags)
               /* No.. Note that we have left the critical section */
 
 #ifdef CONFIG_SCHED_CRITMONITOR
-              nxsched_critmon_csection(rtcb, false);
+              nxsched_critmon_csection(rtcb, false, return_address(0));
 #endif
 #ifdef CONFIG_SCHED_INSTRUMENTATION_CSECTION
               sched_note_csection(rtcb, false);
@@ -624,7 +624,7 @@ void leave_critical_section(irqstate_t flags)
           /* Note that we have left the critical section */
 
 #ifdef CONFIG_SCHED_CRITMONITOR
-          nxsched_critmon_csection(rtcb, false);
+          nxsched_critmon_csection(rtcb, false, return_address(0));
 #endif
 #ifdef CONFIG_SCHED_INSTRUMENTATION_CSECTION
           sched_note_csection(rtcb, false);

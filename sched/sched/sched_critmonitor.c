@@ -132,7 +132,8 @@ clock_t g_crit_max[CONFIG_SMP_NCPUS];
  *
  ****************************************************************************/
 
-void nxsched_critmon_preemption(FAR struct tcb_s *tcb, bool state)
+void nxsched_critmon_preemption(FAR struct tcb_s *tcb, bool state,
+                                FAR void *caller)
 {
   int cpu = this_cpu();
 
@@ -143,6 +144,7 @@ void nxsched_critmon_preemption(FAR struct tcb_s *tcb, bool state)
       /* Disabling.. Save the thread start time */
 
       tcb->premp_start   = perf_gettime();
+      tcb->premp_caller  = caller;
       g_premp_start[cpu] = tcb->premp_start;
     }
   else
@@ -154,7 +156,8 @@ void nxsched_critmon_preemption(FAR struct tcb_s *tcb, bool state)
 
       if (elapsed > tcb->premp_max)
         {
-          tcb->premp_max = elapsed;
+          tcb->premp_max         = elapsed;
+          tcb->premp_max_caller  = tcb->premp_caller;
           CHECK_PREEMPTION(tcb->pid, elapsed);
         }
 
@@ -177,10 +180,12 @@ void nxsched_critmon_preemption(FAR struct tcb_s *tcb, bool state)
  * Assumptions:
  *   - Called within a critical section.
  *   - Never called from an interrupt handler
+ *   - Caller is the address of the function that is entering the critical
  *
  ****************************************************************************/
 
-void nxsched_critmon_csection(FAR struct tcb_s *tcb, bool state)
+void nxsched_critmon_csection(FAR struct tcb_s *tcb, bool state,
+                              FAR void *caller)
 {
   int cpu = this_cpu();
 
@@ -191,6 +196,7 @@ void nxsched_critmon_csection(FAR struct tcb_s *tcb, bool state)
       /* Entering... Save the start time. */
 
       tcb->crit_start   = perf_gettime();
+      tcb->crit_caller  = caller;
       g_crit_start[cpu] = tcb->crit_start;
     }
   else
@@ -202,7 +208,8 @@ void nxsched_critmon_csection(FAR struct tcb_s *tcb, bool state)
 
       if (elapsed > tcb->crit_max)
         {
-          tcb->crit_max = elapsed;
+          tcb->crit_max        = elapsed;
+          tcb->crit_max_caller = tcb->crit_caller;
           CHECK_CSECTION(tcb->pid, elapsed);
         }
 
@@ -319,7 +326,8 @@ void nxsched_suspend_critmon(FAR struct tcb_s *tcb)
       elapsed = current - tcb->premp_start;
       if (elapsed > tcb->premp_max)
         {
-          tcb->premp_max = elapsed;
+          tcb->premp_max         = elapsed;
+          tcb->premp_max_caller  = tcb->premp_caller;
           CHECK_PREEMPTION(tcb->pid, elapsed);
         }
     }
@@ -333,7 +341,8 @@ void nxsched_suspend_critmon(FAR struct tcb_s *tcb)
       elapsed = current - tcb->crit_start;
       if (elapsed > tcb->crit_max)
         {
-          tcb->crit_max = elapsed;
+          tcb->crit_max        = elapsed;
+          tcb->crit_max_caller = tcb->crit_caller;
           CHECK_CSECTION(tcb->pid, elapsed);
         }
     }

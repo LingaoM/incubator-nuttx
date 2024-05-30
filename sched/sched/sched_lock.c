@@ -200,7 +200,7 @@ int sched_lock(void)
           /* Note that we have pre-emption locked */
 
 #ifdef CONFIG_SCHED_CRITMONITOR
-          nxsched_critmon_preemption(rtcb, true);
+          nxsched_critmon_preemption(rtcb, true, return_address(0));
 #endif
 #ifdef CONFIG_SCHED_INSTRUMENTATION_PREEMPTION
           sched_note_premption(rtcb, true);
@@ -257,7 +257,7 @@ int sched_lock(void)
           /* Note that we have pre-emption locked */
 
 #ifdef CONFIG_SCHED_CRITMONITOR
-          nxsched_critmon_preemption(rtcb, true);
+          nxsched_critmon_preemption(rtcb, true, return_address(0));
 #endif
 #ifdef CONFIG_SCHED_INSTRUMENTATION_PREEMPTION
           sched_note_premption(rtcb, true);
