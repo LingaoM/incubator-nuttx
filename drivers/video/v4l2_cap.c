@@ -3670,8 +3670,6 @@ static int capture_unlink(FAR struct inode *inode)
       nxmutex_unlock(&cmng->lock_open_num);
     }
 
-  nxmutex_destroy(&cmng->lock_open_num);
-
   return OK;
 }
 #endif
