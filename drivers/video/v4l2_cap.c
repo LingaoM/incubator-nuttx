@@ -2106,8 +2106,7 @@ static int capture_reqbufs(FAR struct v4l2_s *v4l2,
 {
   FAR capture_mng_t *cmng = (FAR capture_mng_t *)v4l2;
   FAR capture_type_inf_t *type_inf;
-  struct imgdata_s *imgdata = cmng->imgdata;
-
+  struct imgdata_s *imgdata;
   irqstate_t flags;
   int ret = OK;
 
@@ -2116,6 +2115,7 @@ static int capture_reqbufs(FAR struct v4l2_s *v4l2,
       return -EINVAL;
     }
 
+  imgdata  = cmng->imgdata;
   type_inf = get_capture_type_inf(cmng, reqbufs->type);
   if (type_inf == NULL)
     {
