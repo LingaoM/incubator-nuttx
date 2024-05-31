@@ -2350,10 +2350,9 @@ static int capture_dqbuf(FAR struct v4l2_s *v4l2,
            * Therefore, Check cause.
            */
 
-          if (type_inf->wait_capture.waitend_cause == WAITEND_CAUSE_DQCANCEL)
-            {
-              return -ECANCELED;
-            }
+          DEBUGASSERT(type_inf->wait_capture.waitend_cause ==
+                      WAITEND_CAUSE_DQCANCEL);
+          return -ECANCELED;
         }
 
       type_inf->wait_capture.done_container = NULL;
