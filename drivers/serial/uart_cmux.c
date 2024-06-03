@@ -311,7 +311,10 @@ static const unsigned char g_cmux_cfs_table[256] =
   0xba, 0x2b, 0x59, 0xc8, 0xbd, 0x2c, 0x5e, 0xcf
 };
 
+#if defined (CONFIG_UART_CMUX_CONSOLE) || defined(CONFIG_UART_CMUX_LOG) || \
+    defined(CONFIG_UART_CMUX_GSMTTY1) || defined(CONFIG_UART_CMUX_GSMTTY2)
 static FAR struct cmux_s *g_cmux;
+#endif
 
 #ifdef CONFIG_UART_CMUX_CONSOLE
 static char g_cmux_console_buffer[2][CONFIG_UART_CMUX_BUFSIZE];
