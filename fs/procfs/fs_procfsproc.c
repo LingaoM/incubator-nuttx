@@ -1304,12 +1304,12 @@ static ssize_t proc_groupfd(FAR struct proc_file_s *procfile,
         }
 
 #if CONFIG_FS_BACKTRACE > 0
-          for (j = 0; j < CONFIG_FS_BACKTRACE && file->backtrace[j]; j++)
+          for (j = 0; j < CONFIG_FS_BACKTRACE && filep->backtrace[j]; j++)
             {
               snprintf(buf + j * BACKTRACE_WIDTH,
                        sizeof(buf) - j * BACKTRACE_WIDTH,
                        format, BACKTRACE_WIDTH - 1,
-                       file->backtrace[j]);
+                       filep->backtrace[j]);
             }
 #endif
 
