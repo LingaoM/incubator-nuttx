@@ -796,7 +796,10 @@ int nx_close_from_tcb(FAR struct tcb_s *tcb, int fd)
     }
 
   memcpy(&file, filep, sizeof(struct file));
-  memset(filep, 0,     sizeof(struct file));
+
+  /* Erase f_inode so filep can be reused */
+
+  filep->f_inode = NULL;
 
   return file_close(&file);
 }

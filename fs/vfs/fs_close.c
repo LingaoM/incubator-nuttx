@@ -86,9 +86,9 @@ int file_close(FAR struct file *filep)
 
       inode_release(inode);
 
-      /* Reset the user file struct instance so that it cannot be reused. */
+      /* Erase f_inode so filep can be reused */
 
-      memset(filep, 0, sizeof(*filep));
+      filep->f_inode = NULL;
     }
 
   return ret;
