@@ -309,7 +309,7 @@ mempool_multiple_get_dict(FAR struct mempool_multiple_s *mpool,
   size_t row;
   size_t col;
 
-  if (mpool == NULL || blk == NULL)
+  if (mpool == NULL || blk == NULL || mpool->dict == NULL)
     {
       return NULL;
     }
@@ -892,7 +892,8 @@ void mempool_multiple_deinit(FAR struct mempool_multiple_s *mpool)
     }
 
   mempool_multiple_free_chunk(mpool, mpool->dict);
-  mempool_multiple_free_chunk(mpool, mpool->pools);
+  mpool->dict = NULL;
   nxrmutex_destroy(&mpool->lock);
+  mpool->free(mpool->arg, mpool->pools);
   mpool->free(mpool->arg, mpool);
 }
