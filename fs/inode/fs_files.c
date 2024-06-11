@@ -475,7 +475,7 @@ found:
       inode_addref(inode);
     }
 
-  FS_ADD_BACKTRACE(list->fl_files[i][0].backtrace);
+  FS_ADD_BACKTRACE(filep->backtrace);
 
 #ifdef CONFIG_FDCHECK
   return fdcheck_protect(i * CONFIG_NFILE_DESCRIPTORS_PER_BLOCK + j);
