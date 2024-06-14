@@ -173,8 +173,10 @@
 struct cmux_s
 {
   FAR struct cmux_channel_s *channels[CMUX_CHANNEL_MAX];
+  FAR const char *devname;
   mutex_t txlock;
   mutex_t rxlock;
+  int refcnt;
 
   /* Framing Layer */
 
@@ -247,6 +249,8 @@ static bool cmux_tty_txready(FAR struct uart_dev_s *dev);
 static bool cmux_tty_txempty(FAR struct uart_dev_s *dev);
 static int cmux_uart_write(FAR struct cmux_s *cmux, FAR const void *buffer,
                            size_t buflen);
+static int cmux_uart_open(FAR struct cmux_s *cmux);
+static int cmux_uart_close(FAR struct cmux_s *cmux);
 
 /****************************************************************************
  * Private Data
@@ -734,13 +738,6 @@ static int cmux_tty_register(FAR struct cmux_s *cmux, FAR const char *path,
       return ret;
     }
 
-  if (cmux->initiator == CMUX_MASTER)
-    {
-      uint8_t value = 0x8d;
-      cmux_frame_send_cmd(cmux, channel->dlci, CMUX_SABM);
-      cmux_frame_send_ctrl(cmux, channel->dlci, CMD_MSC, &value, 1);
-    }
-
   return OK;
 }
 
@@ -755,11 +752,35 @@ static void cmux_tty_shutdown(FAR struct uart_dev_s *dev)
 
 static int cmux_tty_attach(FAR struct uart_dev_s *dev)
 {
+  FAR struct cmux_channel_s *channel = dev->priv;
+  FAR struct cmux_s *cmux = channel->cmux;
+
+  if (cmux->refcnt == 0)
+    {
+      cmux_uart_open(cmux);
+    }
+
+  cmux->refcnt++;
+  if (cmux->initiator == CMUX_MASTER)
+    {
+      uint8_t value = 0x8d;
+      cmux_frame_send_cmd(cmux, channel->dlci, CMUX_SABM);
+      cmux_frame_send_ctrl(cmux, channel->dlci, CMD_MSC, &value, 1);
+    }
+
   return OK;
 }
 
 static void cmux_tty_detach(FAR struct uart_dev_s *dev)
 {
+  FAR struct cmux_channel_s *channel = dev->priv;
+  FAR struct cmux_s *cmux = channel->cmux;
+
+  cmux->refcnt--;
+  if (cmux->refcnt == 0)
+    {
+      cmux_uart_close(cmux);
+    }
 }
 
 static int cmux_tty_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
@@ -906,6 +927,49 @@ static void cmux_poll_cb(FAR struct pollfd *fds)
   work_queue(HPWORK, &cmux->work, cmux_uart_read, cmux, 0);
 }
 
+static int cmux_uart_open(FAR struct cmux_s *cmux)
+{
+  struct termios term;
+  int ret;
+
+  ret = file_open(&cmux->filep, cmux->devname, O_RDWR | O_NONBLOCK);
+  if (ret < 0)
+    {
+      cmux_err("Failed to open %s: %d\n", cmux->devname, ret);
+      return ret;
+    }
+
+  /* Set the serial port to raw mode */
+
+  file_ioctl(&cmux->filep, TCGETS, &term);
+  cfmakeraw(&term);
+  file_ioctl(&cmux->filep, TCSETS, &term);
+
+  cmux->uart = cmux->filep.f_inode->i_private;
+  cmux->uart->isconsole = false;
+
+  /* Register data receiving notification */
+
+  cmux->fds.arg     = cmux;
+  cmux->fds.events  = POLL_IN;
+  cmux->fds.cb      = cmux_poll_cb;
+  file_poll(&cmux->filep, &cmux->fds, true);
+
+  /* Unregister the serial device to ensure exclusive access to cmux */
+
+  unregister_driver(cmux->devname);
+  return OK;
+}
+
+static int cmux_uart_close(FAR struct cmux_s *cmux)
+{
+  file_poll(&cmux->filep, &cmux->fds, false);
+  register_driver(cmux->devname, cmux->filep.f_inode->u.i_ops, 0666,
+                  cmux->filep.f_inode->i_private);
+  file_close(&cmux->filep);
+  return OK;
+}
+
 /****************************************************************************
  * Name: cmux_initialize
  *
@@ -918,8 +982,6 @@ static struct cmux_s *cmux_initialize(FAR const char *devname,
                                       FAR const struct gsm_config *config)
 {
   FAR struct cmux_s *cmux;
-  struct termios term;
-  int ret;
 
   /* Check the validity of the parameters */
 
@@ -938,34 +1000,9 @@ static struct cmux_s *cmux_initialize(FAR const char *devname,
       return NULL;
     }
 
-  nxmutex_init(&cmux->txlock);
-  nxmutex_init(&cmux->rxlock);
-  ret = file_open(&cmux->filep, devname, O_RDWR | O_NONBLOCK);
-  if (ret < 0)
-    {
-      cmux_err("Failed to open %s: %d\n", devname, ret);
-      kmm_free(cmux);
-      return NULL;
-    }
-
-  /* Set the serial port to raw mode */
-
-  file_ioctl(&cmux->filep, TCGETS, &term);
-  cfmakeraw(&term);
-  file_ioctl(&cmux->filep, TCSETS, &term);
-
-  /* Register data receiving notification */
-
-  cmux->fds.arg     = cmux;
-  cmux->fds.events  = POLL_IN;
-  cmux->fds.cb      = cmux_poll_cb;
-  file_poll(&cmux->filep, &cmux->fds, true);
-
   /* Hook data receiving callback of physical serial port */
 
-  cmux->uart = cmux->filep.f_inode->i_private;
-  cmux->uart->isconsole = false;
-
+  cmux->devname = devname;
   cmux->mru = config->mru;
   cmux->mtu = config->mtu;
   cmux->initiator = config->initiator;
@@ -975,19 +1012,8 @@ static struct cmux_s *cmux_initialize(FAR const char *devname,
   cmux->channels[0]->dlci = 0;
   cmux->channels[0]->cmux = cmux;
 
-  /* Unregister the serial device to ensure exclusive access to cmux */
-
-  unregister_driver(devname);
-
-  /* In master mode, SABM frames need to be sent when the data
-   * channel is established
-   */
-
-  if (cmux->initiator == CMUX_MASTER)
-    {
-      cmux_frame_send_cmd(cmux, 0, CMUX_SABM);
-    }
-
+  nxmutex_init(&cmux->txlock);
+  nxmutex_init(&cmux->rxlock);
   return cmux;
 }
 
