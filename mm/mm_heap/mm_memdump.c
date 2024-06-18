@@ -146,7 +146,7 @@ void mm_memdump(FAR struct mm_heap_s *heap,
              "Address");
     }
 
-#if CONFIG_MM_HEAP_MEMPOOL_THRESHOLD != 0
+#ifdef CONFIG_MM_HEAP_MEMPOOL
   mempool_multiple_memdump(heap->mm_mpool, dump);
 #endif
   mm_foreach(heap, memdump_handler, (FAR void *)dump);
