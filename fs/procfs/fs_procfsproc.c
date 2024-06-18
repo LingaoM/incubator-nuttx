@@ -38,6 +38,7 @@
 #include <errno.h>
 #include <debug.h>
 #include <malloc.h>
+#include <execinfo.h>
 
 #ifdef CONFIG_SCHED_CRITMONITOR
 #  include <time.h>
@@ -70,7 +71,6 @@
  */
 
 #define STATUS_LINELEN  PATH_MAX
-#define BACKTRACE_WIDTH (sizeof(uintptr_t) * 2 + 3) /* 3: ' 0x' prefix */
 
 /****************************************************************************
  * Private Type Definitions
@@ -1293,7 +1293,7 @@ static ssize_t proc_groupfd(FAR struct proc_file_s *procfile,
           continue;
         }
 
-      char buf[CONFIG_FS_BACKTRACE * BACKTRACE_WIDTH + 1] = "";
+      char buf[CONFIG_FS_BACKTRACE * BACKTRACE_PTR_FMT_WIDTH + 1] = "";
       char path[PATH_MAX];
 
 #if CONFIG_FS_BACKTRACE > 0
@@ -1307,13 +1307,8 @@ static ssize_t proc_groupfd(FAR struct proc_file_s *procfile,
         }
 
 #if CONFIG_FS_BACKTRACE > 0
-          for (j = 0; j < CONFIG_FS_BACKTRACE && filep->backtrace[j]; j++)
-            {
-              snprintf(buf + j * BACKTRACE_WIDTH,
-                       sizeof(buf) - j * BACKTRACE_WIDTH,
-                       format, BACKTRACE_WIDTH - 1,
-                       filep->backtrace[j]);
-            }
+      backtrace_format(buf, sizeof(buf), filep->backtrace,
+                       CONFIG_FS_BACKTRACE);
 #endif
 
       linesize   = procfs_snprintf(procfile->line, STATUS_LINELEN,
