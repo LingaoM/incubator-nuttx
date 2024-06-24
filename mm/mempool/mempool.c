@@ -108,6 +108,7 @@ static inline void mempool_add_backtrace(FAR struct mempool_s *pool,
   DEBUGASSERT(buf->magic == MEMPOOL_MAGIC_FREE);
   buf->magic = MEMPOOL_MAGIC_ALLOC;
   buf->pid = _SCHED_GETTID();
+  buf->seqno = g_mm_seqno++;
 #  if CONFIG_MM_BACKTRACE > 0
   if (pool->procfs.backtrace)
     {
