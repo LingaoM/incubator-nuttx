@@ -36,6 +36,7 @@
 #include <nuttx/kthread.h>
 #include <nuttx/mutex.h>
 #include <nuttx/panic_notifier.h>
+#include <nuttx/nuttx.h>
 #include <nuttx/semaphore.h>
 #include <nuttx/rptun/openamp.h>
 #include <nuttx/rptun/rptun.h>
@@ -44,14 +45,6 @@
 #include <metal/utilities.h>
 
 #include "rptun.h"
-
-/****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
-
-#ifndef ALIGN_UP
-#  define ALIGN_UP(s, a)            (((s) + (a) - 1) & ~((a) - 1))
-#endif
 
 #define RPTUNIOC_NONE               0
 
