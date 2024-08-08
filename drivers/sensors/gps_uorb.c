@@ -85,6 +85,7 @@ struct gps_upperhalf_s
   uint8_t                     crefs;
   uint8_t                     flags;
   mutex_t                     lock;
+  mutex_t                     bufferlock;
   sem_t                       buffersem;
   size_t                      parsenext;
   char                        parsebuffer[GPS_PARSE_BUFFERSIZE];
@@ -286,7 +287,7 @@ static ssize_t gps_read(FAR struct file *filep, FAR char *buffer,
   upper = filep->f_inode->i_private;
   user = filep->f_priv;
 
-  nxmutex_lock(&upper->lock);
+  nxmutex_lock(&upper->bufferlock);
   if (user->pos < upper->buffer.tail)
     {
       user->pos = upper->buffer.tail;
@@ -302,14 +303,14 @@ check:
         }
       else
         {
-          nxmutex_unlock(&upper->lock);
+          nxmutex_unlock(&upper->bufferlock);
           ret = nxsem_wait_uninterruptible(&upper->buffersem);
           if (ret < 0)
             {
               return ret;
             }
 
-          nxmutex_lock(&upper->lock);
+          nxmutex_lock(&upper->bufferlock);
           goto check;
         }
     }
@@ -319,7 +320,7 @@ check:
   user->pos += ret;
 
 out:
-  nxmutex_unlock(&upper->lock);
+  nxmutex_unlock(&upper->bufferlock);
   return ret;
 }
 
@@ -377,7 +378,7 @@ static int gps_poll(FAR struct file *filep, FAR struct pollfd *fds,
   upper = filep->f_inode->i_private;
   user = filep->f_priv;
 
-  nxmutex_lock(&upper->lock);
+  nxmutex_lock(&upper->bufferlock);
   if (setup)
     {
       if (user->fds)
@@ -400,7 +401,7 @@ static int gps_poll(FAR struct file *filep, FAR struct pollfd *fds,
     }
 
 out:
-  nxmutex_unlock(&upper->lock);
+  nxmutex_unlock(&upper->bufferlock);
   return ret;
 }
 
@@ -573,7 +574,7 @@ static void gps_push_data(FAR void *priv, FAR const void *data,
       return;
     }
 
-  nxmutex_lock(&upper->lock);
+  nxmutex_lock(&upper->bufferlock);
   if (is_nmea)
     {
       gps_parse(upper, data, bytes);
@@ -586,7 +587,7 @@ static void gps_push_data(FAR void *priv, FAR const void *data,
       poll_notify(&user->fds, 1, POLLIN);
     }
 
-  nxmutex_unlock(&upper->lock);
+  nxmutex_unlock(&upper->bufferlock);
 
   nxsem_get_value(&upper->buffersem, &semcount);
   while (semcount++ <= 0)
@@ -606,7 +607,6 @@ static void gps_push_event(FAR void *priv, FAR const void *data,
       return;
     }
 
-  nxmutex_lock(&upper->lock);
   if (type == SENSOR_TYPE_GPS)
     {
       lower = &upper->dev[GPS_IDX].lower;
@@ -617,8 +617,6 @@ static void gps_push_event(FAR void *priv, FAR const void *data,
       lower = &upper->dev[GPS_SATELLITE_IDX].lower;
       lower->push_event(lower->priv, data, bytes);
     }
-
-  nxmutex_unlock(&upper->lock);
 }
 
 /****************************************************************************
@@ -667,6 +665,7 @@ int gps_register(FAR struct gps_lowerhalf_s *lower, int devno,
   upper->lower = lower;
 
   nxmutex_init(&upper->lock);
+  nxmutex_init(&upper->bufferlock);
   nxsem_init(&upper->buffersem, 0, 0);
   list_initialize(&upper->userlist);
   gps_init_data(&upper->gps);
@@ -721,6 +720,7 @@ satellite_err:
   sensor_unregister(&upper->dev[GPS_IDX].lower, devno);
 gps_err:
   nxmutex_destroy(&upper->lock);
+  nxmutex_destroy(&upper->bufferlock);
   nxsem_destroy(&upper->buffersem);
   kmm_free(upper);
   return ret;
