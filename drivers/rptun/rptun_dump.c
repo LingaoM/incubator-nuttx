@@ -35,6 +35,7 @@
  * Private Functions
  ****************************************************************************/
 
+#ifdef CONFIG_RPTUN_DUMP_VERBOSE
 static void rptun_dump_addr(FAR struct rpmsg_device *rdev,
                             FAR void *addr, bool rx)
 {
@@ -85,6 +86,7 @@ static void rptun_dump_buffer(FAR struct rpmsg_virtio_device *rvdev,
         }
     }
 }
+#endif
 
 /****************************************************************************
  * Public Functions
@@ -93,8 +95,10 @@ static void rptun_dump_buffer(FAR struct rpmsg_virtio_device *rvdev,
 void rptun_dump(FAR struct rpmsg_virtio_device *rvdev)
 {
   FAR struct rpmsg_device *rdev = &rvdev->rdev;
+#ifdef CONFIG_RPTUN_DUMP_VERBOSE
   FAR struct rpmsg_endpoint *ept;
   FAR struct metal_list *node;
+#endif
   bool needlock = true;
 
   if (!rvdev->vdev)
@@ -113,16 +117,21 @@ void rptun_dump(FAR struct rpmsg_virtio_device *rvdev)
       metal_mutex_acquire(&rdev->lock);
     }
 
+#ifdef CONFIG_RPTUN_DUMP_VERBOSE
   metal_log(METAL_LOG_EMERGENCY,
             "Dump rpmsg info between cpu (master: %s)%s <==> %s:\n",
             rpmsg_virtio_get_role(rvdev) == RPMSG_HOST ? "yes" : "no",
             CONFIG_RPTUN_LOCAL_CPUNAME, rpmsg_get_cpuname(rdev));
 
   metal_log(METAL_LOG_EMERGENCY, "rpmsg vq RX:\n");
+#endif
   virtqueue_dump(rvdev->rvq);
+#ifdef CONFIG_RPTUN_DUMP_VERBOSE
   metal_log(METAL_LOG_EMERGENCY, "rpmsg vq TX:\n");
+#endif
   virtqueue_dump(rvdev->svq);
 
+#ifdef CONFIG_RPTUN_DUMP_VERBOSE
   metal_log(METAL_LOG_EMERGENCY, "  rpmsg ept list:\n");
 
   metal_list_for_each(&rdev->endpoints, node)
@@ -135,6 +144,7 @@ void rptun_dump(FAR struct rpmsg_virtio_device *rvdev)
 
   rptun_dump_buffer(rvdev, true);
   rptun_dump_buffer(rvdev, false);
+#endif
 
   syslog_flush();
 

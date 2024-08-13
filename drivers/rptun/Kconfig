@@ -42,6 +42,10 @@ config RPTUN_LOCAL_CPUNAME
 	string "rptun local cpuname"
 	default LIBC_HOSTNAME
 
+config RPTUN_DUMP_VERBOSE
+	bool "rptun dump log verbose"
+	default !DEFAULT_SMALL
+
 config RPTUN_PM
 	bool "rptun power management"
 	depends on PM
