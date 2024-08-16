@@ -21,8 +21,8 @@
 import re
 
 import gdb
+from macros import fetch_macro_info, try_expand
 
-g_symbol_cache = {}
 g_type_cache = {}
 
 
@@ -43,6 +43,42 @@ def lookup_type(name, block=None) -> gdb.Type:
 
 
 long_type = lookup_type("long")
+
+
+class MacroCtx:
+    """
+    This is a singleton class wich only initializes once to
+    cache a context of macro definition which can be queried later
+    TODO: we only deal with single ELF at the moment for simplicity
+    If you load more object files while debugging, only the first one gets loaded
+    will be used to retrieve macro information
+    """
+
+    def __new__(cls, *args, **kwargs):
+        if not hasattr(cls, "instance"):
+            cls.instance = super(MacroCtx, cls).__new__(cls)
+        return cls.instance
+
+    def __init__(self, filename):
+        self._macro_map = {}
+        self._file = filename
+
+        self._macro_map = fetch_macro_info(filename)
+
+    @property
+    def macro_map(self):
+        return self._macro_map
+
+    @property
+    def objfile(self):
+        return self._file
+
+
+if len(gdb.objfiles()) > 0:
+    macroctx = MacroCtx(gdb.objfiles()[0].filename)
+else:
+    raise gdb.GdbError("An executable file must be provided")
+
 
 # Common Helper Functions
 
@@ -91,58 +127,17 @@ def gdb_eval_or_none(expresssion):
         return None
 
 
-def get_symbol_value(name, locspec="nx_start", cacheable=True):
+def get_symbol_value(name):
     """Return the value of a symbol value etc: Variable, Marco"""
-    global g_symbol_cache
 
-    # If there is a current stack frame, GDB uses the macros in scope at that frame’s source code line.
-    # Otherwise, GDB uses the macros in scope at the current listing location.
-    # Reference: https://sourceware.org/gdb/current/onlinedocs/gdb.html/Macros.html#Macros
+    expr = None
+
     try:
-        if not gdb.selected_frame():
-            gdb.execute(f"list {locspec}", to_string=True)
-            return gdb_eval_or_none(name)
+        gdb.execute("set $_%s = %s" % (name, name))
+        expr = "$_%s" % (name)
     except gdb.error:
-        pass
-
-    # Try current frame
-    value = gdb_eval_or_none(name)
-    if value:
-        return value
-
-    # Check if the symbol is already cached
-    if cacheable and (name, locspec) in g_symbol_cache:
-        return g_symbol_cache[(name, locspec)]
-
-    # There's current frame and no definition found. We need second inferior without a valid frame
-    # in order to use the list command to set the scope.
-    if len(gdb.inferiors()) == 1:
-        gdb.execute(
-            f"add-inferior -exec {gdb.objfiles()[0].filename} -no-connection",
-            to_string=True,
-        )
-        g_symbol_cache = {}
-
-    suppressed = "is on" in gdb.execute(
-        "show suppress-cli-notifications", to_string=True
-    )
-    if not suppressed:
-        # Disable notifications
-        gdb.execute("set suppress-cli-notifications on")
-
-    # Switch to inferior 2 and set the scope firstly
-    gdb.execute("inferior 2", to_string=True)
-    gdb.execute(f"list {locspec}", to_string=True)
-    value = gdb_eval_or_none(name)
-    if cacheable:
-        g_symbol_cache[(name, locspec)] = value
-
-    # Switch back to inferior 1
-    gdb.execute("inferior 1", to_string=True)
-
-    if not suppressed:
-        gdb.execute("set suppress-cli-notifications off")
-    return value
+        expr = try_expand(name, macroctx.macro_map)
+    return gdb_eval_or_none(expr)
 
 
 def import_check(module, name="", errmsg=""):
@@ -227,7 +222,7 @@ target_endianness = None
 def get_target_endianness():
     """Return the endianness of the target"""
     global target_endianness
-    if not target_endianness:
+    if target_endianness is None:
         endian = gdb.execute("show endian", to_string=True)
         if "little endian" in endian:
             target_endianness = LITTLE_ENDIAN
@@ -369,37 +364,29 @@ def in_interrupt_context(cpuid=0):
         # TODO: figure out a more proper way to detect if
         # we are in an interrupt context
         g_current_regs = gdb_eval_or_none("g_current_regs")
-        return not g_current_regs or not g_current_regs[cpuid]
+        return not g_current_regs[cpuid]
 
 
 def get_arch_sp_name():
-    if is_target_arch("arm"):
-        # arm and arm variants
-        return "sp"
-    if is_target_arch("aarch64"):
+    if is_target_arch("arm", exact=True):
         return "sp"
     elif is_target_arch("i386", exact=True):
         return "esp"
     elif is_target_arch("i386:x86-64", exact=True):
         return "rsp"
     else:
-        # Default to use sp, add more archs if needed
-        return "sp"
+        raise gdb.GdbError("Not implemented yet")
 
 
 def get_arch_pc_name():
-    if is_target_arch("arm"):
-        # arm and arm variants
-        return "pc"
-    if is_target_arch("aarch64"):
+    if is_target_arch("arm", exact=True):
         return "pc"
     elif is_target_arch("i386", exact=True):
         return "eip"
     elif is_target_arch("i386:x86-64", exact=True):
         return "rip"
     else:
-        # Default to use pc, add more archs if needed
-        return "pc"
+        raise gdb.GdbError("Not implemented yet")
 
 
 def get_register_byname(regname, tcb=None):
@@ -426,14 +413,6 @@ def get_register_byname(regname, tcb=None):
     )[0]
 
     return int(value)
-
-
-def get_sp(tcb=None):
-    return get_register_byname(get_arch_sp_name(), tcb)
-
-
-def get_pc(tcb=None):
-    return get_register_byname(get_arch_pc_name(), tcb)
 
 
 def get_tcbs():
