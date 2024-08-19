@@ -297,6 +297,7 @@ class DumpELFFile:
                 "g_npidhash",
                 "g_last_regs",
                 "g_running_tasks",
+                "g_current_regs",
             ):
                 self.symbol[symbol.name] = symbol
                 logger.debug(
@@ -841,6 +842,18 @@ class GDBStub:
             self.running_tasks[int(unpacked_data[i])] = parse_regs_to_gdb(
                 self.elffile.symbol["g_last_regs"]["st_value"] + i * last_regs_size
             )
+            if not all(byte == 0 for byte in self.running_tasks[int(unpacked_data[i])]):
+                continue
+
+            current_regs = int(unpack_data(
+                self.elffile.symbol["g_current_regs"]["st_value"] + i * 4,
+                self.elffile.symbol["g_current_regs"]["st_size"] // self.cpunum,
+                f"<I",
+            )[0])
+
+            self.running_tasks[int(unpacked_data[i])] = parse_regs_to_gdb(current_regs)
+            if all(byte == 0 for byte in self.running_tasks[int(unpacked_data[i])]):
+                del self.running_tasks[int(unpacked_data[i])]
 
         for tcbptr in tcbptr_list:
             if tcbptr == 0:
