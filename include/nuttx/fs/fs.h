@@ -37,7 +37,6 @@
 
 #include <nuttx/mutex.h>
 #include <nuttx/semaphore.h>
-#include <nuttx/spinlock.h>
 #include <nuttx/mm/map.h>
 #include <nuttx/spawn.h>
 
@@ -467,7 +466,6 @@ struct file
 
 struct filelist
 {
-  spinlock_t        fl_lock;    /* Manage access to the file list */
   uint8_t           fl_rows;    /* The number of rows of fl_files array */
   uint8_t           fl_crefs;   /* The references to filelist */
   FAR struct file **fl_files;   /* The pointer of two layer file descriptors array */
