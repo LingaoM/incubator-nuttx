@@ -51,6 +51,8 @@
 
 #define RPTUN_TIMEOUT_MS            20
 
+#define RPTUN_RECURSIVE_LIMIT       8
+
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -65,6 +67,7 @@ struct rptun_priv_s
   rmutex_t                     lock;
   struct metal_list            node;
   sem_t                        semtx;
+  int                          recursive;
 #ifdef CONFIG_RPTUN_WORKQUEUE
   struct work_s                work;
 #else
@@ -534,10 +537,20 @@ static int rptun_notify_wait(FAR struct remoteproc *rproc, uint32_t id)
       return -EAGAIN;
     }
 
+  /* Limit the get tx buffer recursive level */
+
+  if (priv->recursive >= RPTUN_RECURSIVE_LIMIT)
+    {
+      return -EAGAIN;
+    }
+
+  priv->recursive++;
+
   /* Wait to wakeup */
 
   nxsem_tickwait(&priv->semtx, MSEC2TICK(RPTUN_TIMEOUT_MS));
   rptun_worker(priv);
+  priv->recursive--;
 
   return 0;
 }
