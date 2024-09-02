@@ -145,14 +145,19 @@ static void mm_delayfree(struct mm_heap_s *heap, void *mem, bool delay);
  ****************************************************************************/
 
 static void memdump_backtrace(FAR struct mm_heap_s *heap,
-                              FAR struct memdump_backtrace_s *buf)
+                              FAR struct memdump_backtrace_s *buf,
+                              bool alloc)
 {
 #  if CONFIG_MM_BACKTRACE > 0
   FAR struct tcb_s *tcb;
 #  endif
 
   buf->pid = _SCHED_GETTID();
-  buf->seqno = g_mm_seqno++;
+  if (alloc)
+    {
+      buf->seqno = g_mm_seqno++;
+    }
+
 #  if CONFIG_MM_BACKTRACE > 0
   tcb = nxsched_get_tcb(buf->pid);
   if (heap->mm_procfs.backtrace ||
@@ -520,6 +525,11 @@ static void mm_delayfree(FAR struct mm_heap_s *heap, FAR void *mem,
         }
       else
         {
+#if CONFIG_MM_BACKTRACE >= 0
+          FAR struct memdump_backtrace_s *buf = mem + mm_malloc_size(heap, mem);
+
+          memdump_backtrace(heap, buf, false);
+#endif
           tlsf_free(heap->mm_tlsf, mem);
         }
 
@@ -1141,7 +1151,7 @@ FAR void *mm_malloc(FAR struct mm_heap_s *heap, size_t size)
 #if CONFIG_MM_BACKTRACE >= 0
       FAR struct memdump_backtrace_s *buf = ret + mm_malloc_size(heap, ret);
 
-      memdump_backtrace(heap, buf);
+      memdump_backtrace(heap, buf, true);
 #endif
       kasan_unpoison(ret, mm_malloc_size(heap, ret));
 
@@ -1215,7 +1225,7 @@ FAR void *mm_memalign(FAR struct mm_heap_s *heap, size_t alignment,
 #if CONFIG_MM_BACKTRACE >= 0
       FAR struct memdump_backtrace_s *buf = ret + mm_malloc_size(heap, ret);
 
-      memdump_backtrace(heap, buf);
+      memdump_backtrace(heap, buf, true);
 #endif
       kasan_unpoison(ret, mm_malloc_size(heap, ret));
     }
@@ -1337,7 +1347,7 @@ FAR void *mm_realloc(FAR struct mm_heap_s *heap, FAR void *oldmem,
       FAR struct memdump_backtrace_s *buf =
         newmem + mm_malloc_size(heap, newmem);
 
-      memdump_backtrace(heap, buf);
+      memdump_backtrace(heap, buf, true);
     }
 #endif
 

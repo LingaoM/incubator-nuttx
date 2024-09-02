@@ -71,16 +71,19 @@
 #endif
 
 #if CONFIG_MM_BACKTRACE == 0
-#  define MM_ADD_BACKTRACE(heap, ptr) \
+#  define MM_ADD_BACKTRACE(heap, ptr, alloc) \
      do \
        { \
          FAR struct mm_allocnode_s *tmp = (FAR struct mm_allocnode_s *)(ptr); \
          tmp->pid = _SCHED_GETTID(); \
-         tmp->seqno = g_mm_seqno++; \
+         if (alloc) \
+           { \
+             tmp->seqno = g_mm_seqno++; \
+           } \
        } \
      while (0)
 #elif CONFIG_MM_BACKTRACE > 0
-#  define MM_ADD_BACKTRACE(heap, ptr) \
+#  define MM_ADD_BACKTRACE(heap, ptr, alloc) \
      do \
        { \
          FAR struct mm_allocnode_s *tmp = (FAR struct mm_allocnode_s *)(ptr); \
@@ -100,11 +103,14 @@
            { \
              tmp->backtrace[0] = NULL; \
            } \
-         tmp->seqno = g_mm_seqno++; \
+         if (alloc) \
+           { \
+             tmp->seqno = g_mm_seqno++; \
+           } \
        } \
      while (0)
 #else
-#  define MM_ADD_BACKTRACE(heap, ptr)
+#  define MM_ADD_BACKTRACE(heap, ptr, alloc)
 #endif
 
 /* All other definitions derive from these two */

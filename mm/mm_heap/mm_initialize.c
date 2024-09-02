@@ -243,7 +243,7 @@ void mm_addregion(FAR struct mm_heap_s *heap, FAR void *heapstart,
    */
 
   heap->mm_heapstart[IDX]          = (FAR struct mm_allocnode_s *)heapbase;
-  MM_ADD_BACKTRACE(heap, heap->mm_heapstart[IDX]);
+  MM_ADD_BACKTRACE(heap, heap->mm_heapstart[IDX], true);
   heap->mm_heapstart[IDX]->size    = MM_SIZEOF_ALLOCNODE | MM_ALLOC_BIT;
   node                             = (FAR struct mm_freenode_s *)
                                      (heapbase + MM_SIZEOF_ALLOCNODE);
@@ -254,7 +254,7 @@ void mm_addregion(FAR struct mm_heap_s *heap, FAR void *heapstart,
   heap->mm_heapend[IDX]->size      = MM_SIZEOF_ALLOCNODE | MM_ALLOC_BIT |
                                      MM_PREVFREE_BIT;
   heap->mm_heapend[IDX]->preceding = node->size;
-  MM_ADD_BACKTRACE(heap, heap->mm_heapend[IDX]);
+  MM_ADD_BACKTRACE(heap, heap->mm_heapend[IDX], true);
 
 #undef IDX
 

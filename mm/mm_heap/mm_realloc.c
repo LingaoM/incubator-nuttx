@@ -151,7 +151,7 @@ FAR void *mm_realloc(FAR struct mm_heap_s *heap, FAR void *oldmem,
       /* Then return the original address */
 
       mm_unlock(heap);
-      MM_ADD_BACKTRACE(heap, oldnode);
+      MM_ADD_BACKTRACE(heap, oldnode, true);
 
       return oldmem;
     }
@@ -374,7 +374,7 @@ FAR void *mm_realloc(FAR struct mm_heap_s *heap, FAR void *oldmem,
         }
 
       mm_unlock(heap);
-      MM_ADD_BACKTRACE(heap, (FAR char *)newmem - MM_SIZEOF_ALLOCNODE);
+      MM_ADD_BACKTRACE(heap, (FAR char *)newmem - MM_SIZEOF_ALLOCNODE, true);
 
       kasan_unpoison(newmem, mm_malloc_size(heap, newmem));
       if (newmem != oldmem)

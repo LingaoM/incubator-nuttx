@@ -105,10 +105,20 @@ static inline void mempool_add_backtrace(FAR struct mempool_s *pool,
                                          FAR struct mempool_backtrace_s *buf,
                                          bool alloc)
 {
-  DEBUGASSERT(buf->magic == MEMPOOL_MAGIC_FREE);
-  buf->magic = MEMPOOL_MAGIC_ALLOC;
+  if (alloc)
+    {
+      DEBUGASSERT(buf->magic == MEMPOOL_MAGIC_FREE);
+      buf->magic = MEMPOOL_MAGIC_ALLOC;
+      buf->seqno = g_mm_seqno++;
+    }
+  else
+    {
+      DEBUGASSERT(buf->magic == MEMPOOL_MAGIC_ALLOC);
+      buf->magic = MEMPOOL_MAGIC_FREE;
+    }
+
   buf->pid = _SCHED_GETTID();
-  buf->seqno = g_mm_seqno++;
+
 #  if CONFIG_MM_BACKTRACE > 0
   if (pool->procfs.backtrace)
     {
@@ -429,15 +439,6 @@ void mempool_release(FAR struct mempool_s *pool, FAR void *blk)
 {
   irqstate_t flags = spin_lock_irqsave(&pool->lock);
   size_t blocksize = MEMPOOL_REALBLOCKSIZE(pool);
-#if CONFIG_MM_BACKTRACE >= 0
-  FAR struct mempool_backtrace_s *buf =
-    (FAR struct mempool_backtrace_s *)((FAR char *)blk + pool->blocksize);
-
-  /* Check double free or out of out of bounds */
-
-  DEBUGASSERT(buf->magic == MEMPOOL_MAGIC_ALLOC);
-  buf->magic = MEMPOOL_MAGIC_FREE;
-#endif
 
   pool->nalloc--;
 
@@ -461,6 +462,11 @@ void mempool_release(FAR struct mempool_s *pool, FAR void *blk)
     {
       sq_addlast(blk, &pool->queue);
     }
+
+#if CONFIG_MM_BACKTRACE >= 0
+  mempool_add_backtrace(pool, (FAR struct mempool_backtrace_s *)
+                        ((FAR char *)blk + pool->blocksize), false);
+#endif
 
   kasan_poison(blk, pool->blocksize);
   spin_unlock_irqrestore(&pool->lock, flags);

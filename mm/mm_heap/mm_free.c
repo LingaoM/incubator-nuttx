@@ -118,6 +118,8 @@ void mm_delayfree(FAR struct mm_heap_s *heap, FAR void *mem, bool delay)
   node = (FAR struct mm_freenode_s *)((FAR char *)mem - MM_SIZEOF_ALLOCNODE);
   nodesize = MM_SIZEOF_NODE(node);
 
+  MM_ADD_BACKTRACE(heap, node, false);
+
   /* Sanity check against double-frees */
 
   DEBUGASSERT(MM_NODE_IS_ALLOC(node));
