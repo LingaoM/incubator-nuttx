@@ -437,10 +437,6 @@ void mempool_release(FAR struct mempool_s *pool, FAR void *blk)
 
   DEBUGASSERT(buf->magic == MEMPOOL_MAGIC_ALLOC);
   buf->magic = MEMPOOL_MAGIC_FREE;
-
-#else
-  pool->nalloc--;
-  pool->nalloc--;
 #endif
 
   pool->nalloc--;
