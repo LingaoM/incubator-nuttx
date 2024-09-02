@@ -1107,13 +1107,13 @@ static void w5500_transmit(FAR struct w5500_driver_s *self)
   if (!w5500_txbuf_numfree(self))
     {
       ninfo("Dropping Tx packet due to no buffer available.\n");
-      NETDEV_TXERRORS(self->w_dev);
+      NETDEV_TXERRORS(&self->w_dev);
       return;
     }
 
   /* Increment statistics */
 
-  NETDEV_TXPACKETS(self->w_dev);
+  NETDEV_TXPACKETS(&self->w_dev);
 
   /* Copy packet data to TX buffer */
 
@@ -1460,7 +1460,7 @@ static void w5500_txdone(FAR struct w5500_driver_s *self)
 {
   /* Check for errors and update statistics */
 
-  NETDEV_TXDONE(self->w_dev);
+  NETDEV_TXDONE(&self->w_dev);
 
   /* Check if there are pending transmissions. */
 
@@ -1672,7 +1672,7 @@ static void w5500_txtimeout_work(FAR void *arg)
 
   /* Increment statistics and dump debug info */
 
-  NETDEV_TXTIMEOUTS(self->w_dev);
+  NETDEV_TXTIMEOUTS(&self->w_dev);
 
   /* Then reset the hardware */
 
