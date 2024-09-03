@@ -64,6 +64,53 @@
  ****************************************************************************/
 
 /****************************************************************************
+ * Name: udp_is_broadcast
+ *
+ * Description:
+ *   Check if the destination address is a broadcast/multicast address.
+ *
+ * Input Parameters:
+ *   dev - The device driver structure containing the received UDP packet
+ *
+ * Returned Value:
+ *   True if the destination address is a broadcast/multicast address
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NET_BROADCAST
+static bool udp_is_broadcast(FAR struct net_driver_s *dev)
+{
+  /* Check if the destination address is a broadcast/multicast address */
+
+#ifdef CONFIG_NET_IPv4
+#  ifdef CONFIG_NET_IPv6
+  if (IFF_IS_IPv4(dev->d_flags))
+#  endif
+    {
+      FAR struct ipv4_hdr_s *ipv4 = IPv4BUF;
+      in_addr_t destipaddr = net_ip4addr_conv32(ipv4->destipaddr);
+
+      return net_ipv4addr_cmp(destipaddr, INADDR_BROADCAST) ||
+             IN_MULTICAST(NTOHL(destipaddr)) ||
+             (net_ipv4addr_maskcmp(destipaddr, dev->d_ipaddr, dev->d_netmask)
+              && net_ipv4addr_broadcast(destipaddr, dev->d_netmask));
+    }
+#endif
+#ifdef CONFIG_NET_IPv6
+#  ifdef CONFIG_NET_IPv4
+  else
+#  endif
+    {
+      FAR struct ipv6_hdr_s *ipv6 = IPv6BUF;
+      return net_is_addr_mcast(ipv6->destipaddr);
+    }
+#endif
+
+  return false;
+}
+#endif
+
+/****************************************************************************
  * Name: udp_input
  *
  * Description:
@@ -216,6 +263,16 @@ static int udp_input(FAR struct net_driver_s *dev, unsigned int iplen)
               udp_send(dev, conn);
             }
         }
+#ifdef CONFIG_NET_BROADCAST
+      else if (udp_is_broadcast(dev))
+        {
+          /* Due to RFC 1112, Section 7.2, we don't reply ICMP error
+           * message when the destination address is broadcast/multicast.
+           */
+
+          dev->d_len = 0;
+        }
+#endif
       else
         {
           nwarn("WARNING: No listener on UDP port\n");
