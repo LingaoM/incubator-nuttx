@@ -716,7 +716,7 @@ int epoll_pwait(int epfd, FAR struct epoll_event *evs,
   eph = epoll_head_from_fd(epfd, &filep);
   if (eph == NULL)
     {
-      return ERROR;
+      goto out;
     }
 
 retry:
@@ -776,6 +776,8 @@ retry:
 err:
   fs_putfilep(filep);
   set_errno(-ret);
+out:
+  ferr("epoll wait failed:%d, timeout:%d\n", errno, timeout);
   return ERROR;
 }
 
@@ -800,7 +802,7 @@ int epoll_wait(int epfd, FAR struct epoll_event *evs,
   eph = epoll_head_from_fd(epfd, &filep);
   if (eph == NULL)
     {
-      return ERROR;
+      goto out;
     }
 
 retry:
@@ -857,5 +859,7 @@ retry:
 err:
   fs_putfilep(filep);
   set_errno(-ret);
+out:
+  ferr("epoll wait failed:%d, timeout:%d\n", errno, timeout);
   return ERROR;
 }
