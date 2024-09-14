@@ -651,6 +651,7 @@ define kconfig_tweak_disable
 	kconfig-tweak --file $1 -u $2
 endef
 else
+  OVERWRITE_WARNING = "set more than once"
   KCONFIG_WARNING       = if [ -s kwarning ]; \
                             then rm kwarning; \
                               exit 1; \
@@ -658,7 +659,7 @@ else
                               rm kwarning; \
                           fi
   MODULE_WARNING        = "warning: the 'modules' option is not supported"
-  PURGE_MODULE_WARNING  = 2> >(grep -v ${MODULE_WARNING} | tee kwarning) | cat && ${KCONFIG_WARNING}
+  PURGE_MODULE_WARNING  = 2> >(grep -v -e ${MODULE_WARNING} -e ${OVERWRITE_WARNING} | tee kwarning) | cat && ${KCONFIG_WARNING}
   KCONFIG_OLDCONFIG     = oldconfig ${PURGE_MODULE_WARNING}
   KCONFIG_OLDDEFCONFIG  = olddefconfig ${PURGE_MODULE_WARNING}
   KCONFIG_MENUCONFIG    = menuconfig $(subst | cat,,${PURGE_MODULE_WARNING})
