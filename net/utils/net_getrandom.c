@@ -52,11 +52,11 @@
 void net_getrandom(FAR void *bytes, size_t nbytes)
 {
 #if defined(CONFIG_DEV_URANDOM) || defined(CONFIG_DEV_RANDOM)
-  ssize_t ret = getrandom(bytes, nbytes, 0);
+  ssize_t ret = getrandom(bytes, nbytes, GRND_RANDOM);
 
   if (ret < 0)
     {
-      ret = getrandom(bytes, nbytes, GRND_RANDOM);
+      ret = getrandom(bytes, nbytes, 0);
     }
 
   if (ret == nbytes)
