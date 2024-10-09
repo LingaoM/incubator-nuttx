@@ -161,7 +161,6 @@ int syslog_add_intbuffer(int ch)
   uint32_t endndx;
   unsigned int inuse;
   int ret = OK;
-  int i;
 
   /* Disable concurrent modification from interrupt handling logic */
 
@@ -185,27 +184,42 @@ int syslog_add_intbuffer(int ch)
   if (inuse == CONFIG_SYSLOG_INTBUFSIZE - 1)
     {
       int oldch = syslog_remove_intbuffer();
+      int i;
+
       for (i = 0; i < CONFIG_SYSLOG_MAX_CHANNELS; i++)
         {
-          if (g_syslog_channel[i] == NULL)
+          FAR struct syslog_channel_s *channel = g_syslog_channel[i];
+
+          if (channel == NULL)
             {
               break;
             }
 
 #ifdef CONFIG_SYSLOG_IOCTL
-          if (g_syslog_channel[i]->sc_disable)
+          if (channel->sc_state & SYSLOG_CHANNEL_DISABLE)
             {
               continue;
             }
 #endif
 
-          /* Select which putc function to use for this flush */
-
-          if (g_syslog_channel[i]->sc_ops->sc_force)
+          if (channel->sc_ops->sc_force == NULL)
             {
-              g_syslog_channel[i]->sc_ops->sc_force(
-                                           g_syslog_channel[i], oldch);
+              continue;
             }
+
+#ifdef CONFIG_SYSLOG_CRLF
+          /* Check for LF */
+
+          if (oldch == '\n' &&
+              !(channel->sc_state & SYSLOG_CHANNEL_DISABLE_CRLF))
+            {
+              /* Add CR */
+
+              channel->sc_ops->sc_force(channel, '\r');
+            }
+#endif
+
+          channel->sc_ops->sc_force(channel, oldch);
         }
 
         ret = -ENOSPC;
@@ -248,9 +262,7 @@ int syslog_add_intbuffer(int ch)
 
 int syslog_flush_intbuffer(bool force)
 {
-  syslog_putc_t putfunc;
   int ch;
-  int i;
 
   /* This logic is performed with the scheduler disabled to protect from
    * concurrent modification by other tasks.
@@ -258,8 +270,10 @@ int syslog_flush_intbuffer(bool force)
 
   sched_lock();
 
-  do
+  for (; ; )
     {
+      int i;
+
       /* Transfer one character to time.  This is inefficient, but is
        * done in this way to: (1) Deal with concurrent modification of
        * the interrupt buffer from interrupt activity, (2) Avoid keeper
@@ -268,16 +282,23 @@ int syslog_flush_intbuffer(bool force)
        */
 
       ch = syslog_remove_intbuffer();
+      if (ch == EOF)
+        {
+          break;
+        }
 
       for (i = 0; i < CONFIG_SYSLOG_MAX_CHANNELS; i++)
         {
-          if ((g_syslog_channel[i] == NULL) || (ch == EOF))
+          FAR struct syslog_channel_s *channel = g_syslog_channel[i];
+          syslog_putc_t putfunc;
+
+          if (channel == NULL)
             {
               break;
             }
 
 #ifdef CONFIG_SYSLOG_IOCTL
-          if (g_syslog_channel[i]->sc_disable)
+          if (channel->sc_state & SYSLOG_CHANNEL_DISABLE)
             {
               continue;
             }
@@ -285,16 +306,26 @@ int syslog_flush_intbuffer(bool force)
 
           /* Select which putc function to use for this flush */
 
-          putfunc = force ? g_syslog_channel[i]->sc_ops->sc_force :
-                    g_syslog_channel[i]->sc_ops->sc_putc;
+          putfunc = force ? channel->sc_ops->sc_force :
+                    channel->sc_ops->sc_putc;
 
-          putfunc(g_syslog_channel[i], ch);
+#ifdef CONFIG_SYSLOG_CRLF
+          /* Check for LF */
+
+          if (ch == '\n' &&
+              !(channel->sc_state & SYSLOG_CHANNEL_DISABLE_CRLF))
+            {
+              /* Add CR */
+
+              putfunc(channel, '\r');
+            }
+#endif
+
+          putfunc(channel, ch);
         }
     }
-  while (ch != EOF);
 
   sched_unlock();
-
   return ch;
 }
 

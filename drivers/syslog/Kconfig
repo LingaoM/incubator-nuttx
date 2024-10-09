@@ -17,6 +17,13 @@ config SYSLOG_DEFAULT_MASK
 
 comment "SYSLOG options"
 
+config SYSLOG_CRLF
+	bool "Syslog convert LF to CRLF"
+	default n
+	---help---
+		Pre-pend a carriage return before every linefeed that goes into the
+		syslog.
+
 config SYSLOG_MAX_CHANNELS
 	int "Maximum SYSLOG channels"
 	default 1

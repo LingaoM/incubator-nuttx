@@ -657,15 +657,6 @@ int up_putc(int ch)
   esp32c6_lowputc_disable_all_uart_int(CONSOLE_DEV.priv, &int_status);
 #endif
 
-  /* Check for LF */
-
-  if (ch == '\n')
-    {
-      /* Add CR */
-
-      riscv_lowputc('\r');
-    }
-
   riscv_lowputc(ch);
 
 #ifdef CONSOLE_UART
@@ -693,15 +684,6 @@ int up_putc(int ch)
 
   esp32c6_lowputc_disable_all_uart_int(CONSOLE_DEV.priv, &int_status);
 #endif
-
-  /* Check for LF */
-
-  if (ch == '\n')
-    {
-      /* Add CR */
-
-      riscv_lowputc('\r');
-    }
 
   riscv_lowputc(ch);
 

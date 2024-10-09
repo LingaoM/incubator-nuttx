@@ -814,16 +814,6 @@ int up_putc(int ch)
   uint32_t ien;
 
   efm32_disableuartint(priv, &ien);
-
-  /* Check for LF */
-
-  if (ch == '\n')
-    {
-      /* Add CR */
-
-      efm32_lowputc('\r');
-    }
-
   efm32_lowputc(ch);
   efm32_restoreuartint(priv, ien);
   return ch;
@@ -843,15 +833,6 @@ int up_putc(int ch)
 #ifdef HAVE_LEUART_CONSOLE
 int up_putc(int ch)
 {
-  /* Check for LF */
-
-  if (ch == '\n')
-    {
-      /* Add CR */
-
-      efm32_lowputc('\r');
-    }
-
   efm32_lowputc(ch);
   return ch;
 }

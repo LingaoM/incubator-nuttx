@@ -3200,16 +3200,6 @@ int up_putc(int ch)
   uint16_t ie;
 
   stm32l5serial_disableusartint(priv, &ie);
-
-  /* Check for LF */
-
-  if (ch == '\n')
-    {
-      /* Add CR */
-
-      arm_lowputc('\r');
-    }
-
   arm_lowputc(ch);
   stm32l5serial_restoreusartint(priv, ie);
 #endif
@@ -3229,15 +3219,6 @@ int up_putc(int ch)
 int up_putc(int ch)
 {
 #if CONSOLE_UART > 0
-  /* Check for LF */
-
-  if (ch == '\n')
-    {
-      /* Add CR */
-
-      arm_lowputc('\r');
-    }
-
   arm_lowputc(ch);
 #endif
   return ch;

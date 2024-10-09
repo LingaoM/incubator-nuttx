@@ -70,7 +70,7 @@ static ssize_t syslog_default_write(FAR struct syslog_channel_s *channel,
  * Private Data
  ****************************************************************************/
 
-#if defined(CONFIG_RAMLOG_SYSLOG)
+#ifdef CONFIG_RAMLOG_SYSLOG
 static const struct syslog_channel_ops_s g_ramlog_channel_ops =
 {
   ramlog_putc,
@@ -84,12 +84,14 @@ static struct syslog_channel_s g_ramlog_channel =
   &g_ramlog_channel_ops
 #  ifdef CONFIG_SYSLOG_IOCTL
   , "ram"
-  , false
+#  endif
+#  ifdef CONFIG_SYSLOG_CRLF
+  , SYSLOG_CHANNEL_DISABLE_CRLF
 #  endif
 };
 #endif
 
-#if defined(CONFIG_SYSLOG_RPMSG)
+#ifdef CONFIG_SYSLOG_RPMSG
 static const struct syslog_channel_ops_s g_rpmsg_channel_ops =
 {
   syslog_rpmsg_putc,
@@ -104,12 +106,14 @@ static struct syslog_channel_s g_rpmsg_channel =
   &g_rpmsg_channel_ops
 #  ifdef CONFIG_SYSLOG_IOCTL
   , "rpmsg"
-  , false
+#  endif
+#  ifdef CONFIG_SYSLOG_CRLF
+  , SYSLOG_CHANNEL_DISABLE_CRLF
 #  endif
 };
 #endif
 
-#if defined(CONFIG_SYSLOG_RTT)
+#ifdef CONFIG_SYSLOG_RTT
 static const struct syslog_channel_ops_s g_rtt_channel_ops =
 {
   syslog_rtt_putc,
@@ -124,12 +128,14 @@ static struct syslog_channel_s g_rtt_channel =
   &g_rtt_channel_ops
 #  ifdef CONFIG_SYSLOG_IOCTL
   , "rtt"
-  , false
+#  endif
+#  ifdef CONFIG_SYSLOG_CRLF
+  , SYSLOG_CHANNEL_DISABLE_CRLF
 #  endif
 };
 #endif
 
-#if defined(CONFIG_SYSLOG_DEFAULT)
+#ifdef CONFIG_SYSLOG_DEFAULT
 static const struct syslog_channel_ops_s g_default_channel_ops =
 {
   syslog_default_putc,
@@ -143,7 +149,6 @@ static struct syslog_channel_s g_default_channel =
   &g_default_channel_ops
 #  ifdef CONFIG_SYSLOG_IOCTL
   , "default"
-  , false
 #  endif
 };
 #endif
@@ -190,19 +195,16 @@ static struct syslog_channel_s g_default_channel =
 FAR struct syslog_channel_s
 *g_syslog_channel[CONFIG_SYSLOG_MAX_CHANNELS] =
 {
-#if defined(CONFIG_SYSLOG_DEFAULT)
+#ifdef CONFIG_SYSLOG_DEFAULT
   &g_default_channel,
 #endif
-
-#if defined(CONFIG_RAMLOG_SYSLOG)
+#ifdef CONFIG_RAMLOG_SYSLOG
   &g_ramlog_channel,
 #endif
-
-#if defined(CONFIG_SYSLOG_RPMSG)
+#ifdef CONFIG_SYSLOG_RPMSG
   &g_rpmsg_channel,
 #endif
-
-#if defined(CONFIG_SYSLOG_RTT)
+#ifdef CONFIG_SYSLOG_RTT
   &g_rtt_channel
 #endif
 };
@@ -220,22 +222,22 @@ FAR struct syslog_channel_s
  *
  ****************************************************************************/
 
-#if defined(CONFIG_SYSLOG_DEFAULT)
+#ifdef CONFIG_SYSLOG_DEFAULT
 static int syslog_default_putc(FAR struct syslog_channel_s *channel, int ch)
 {
   UNUSED(channel);
 
-#if defined(CONFIG_ARCH_LOWPUTC)
+#  ifdef CONFIG_ARCH_LOWPUTC
   return up_putc(ch);
-#else
+#  else
   return ch;
-#endif
+#  endif
 }
 
 static ssize_t syslog_default_write(FAR struct syslog_channel_s *channel,
                                     FAR const char *buffer, size_t buflen)
 {
-#if defined(CONFIG_ARCH_LOWPUTC)
+#  ifdef CONFIG_ARCH_LOWPUTC
   static mutex_t lock = NXMUTEX_INITIALIZER;
 
   nxmutex_lock(&lock);
@@ -243,7 +245,7 @@ static ssize_t syslog_default_write(FAR struct syslog_channel_s *channel,
   up_nputs(buffer, buflen);
 
   nxmutex_unlock(&lock);
-#endif
+#  endif
 
   UNUSED(channel);
   return buflen;
@@ -272,18 +274,16 @@ static ssize_t syslog_default_write(FAR struct syslog_channel_s *channel,
 
 int syslog_channel(FAR struct syslog_channel_s *channel)
 {
-#if (CONFIG_SYSLOG_MAX_CHANNELS != 1)
-  int i;
-#endif
-
   DEBUGASSERT(channel != NULL);
 
   if (channel != NULL)
     {
-#if (CONFIG_SYSLOG_MAX_CHANNELS == 1)
+#if CONFIG_SYSLOG_MAX_CHANNELS == 1
       g_syslog_channel[0] = channel;
       return OK;
 #else
+      int i;
+
       for (i = 0; i < CONFIG_SYSLOG_MAX_CHANNELS; i++)
         {
           if (g_syslog_channel[i] == NULL)
