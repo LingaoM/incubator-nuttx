@@ -1085,9 +1085,14 @@ static int rptun_ioctl_foreach(FAR const char *cpuname, int cmd,
                                unsigned long value)
 {
   FAR struct metal_list *node;
+  bool needlock = !up_interrupt_context();
   int ret = OK;
 
-  nxrmutex_lock(&g_rptun_lockpriv);
+  if (needlock)
+    {
+      nxrmutex_lock(&g_rptun_lockpriv);
+    }
+
   metal_list_for_each(&g_rptun_priv, node)
     {
       FAR struct rptun_priv_s *priv;
@@ -1102,7 +1107,11 @@ static int rptun_ioctl_foreach(FAR const char *cpuname, int cmd,
         }
     }
 
-  nxrmutex_unlock(&g_rptun_lockpriv);
+  if (needlock)
+    {
+      nxrmutex_unlock(&g_rptun_lockpriv);
+    }
+
   return ret;
 }
 
