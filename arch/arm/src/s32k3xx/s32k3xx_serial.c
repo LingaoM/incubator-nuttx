@@ -4412,6 +4412,16 @@ int up_putc(int ch)
   uint32_t ie;
 
   s32k3xx_disableuartint(priv, &ie);
+
+  /* Check for LF */
+
+  if (ch == '\n')
+    {
+      /* Add CR */
+
+      s32k3xx_lowputc('\r');
+    }
+
   s32k3xx_lowputc(ch);
   s32k3xx_restoreuartint(priv, ie);
 #endif
@@ -4432,6 +4442,15 @@ int up_putc(int ch)
 int up_putc(int ch)
 {
 #if CONSOLE_LPUART > 0
+  /* Check for LF */
+
+  if (ch == '\n')
+    {
+      /* Add CR */
+
+      arm_lowputc('\r');
+    }
+
   arm_lowputc(ch);
 #endif
 

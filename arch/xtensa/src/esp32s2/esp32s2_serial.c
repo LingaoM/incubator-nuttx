@@ -1076,6 +1076,16 @@ int up_putc(int ch)
   uint32_t int_status;
 
   esp32s2_lowputc_disable_all_uart_int(CONSOLE_DEV.priv, &int_status);
+
+  /* Check for LF */
+
+  if (ch == '\n')
+    {
+      /* Add CR */
+
+      xtensa_lowputc('\r');
+    }
+
   xtensa_lowputc(ch);
   esp32s2_lowputc_restore_all_uart_int(CONSOLE_DEV.priv, &int_status);
 #endif
@@ -1128,6 +1138,15 @@ int up_putc(int ch)
 {
 #ifdef HAVE_SERIAL_CONSOLE
   uint32_t int_status;
+
+  /* Check for LF */
+
+  if (ch == '\n')
+    {
+      /* Add CR */
+
+      xtensa_lowputc('\r');
+    }
 
   xtensa_lowputc(ch);
 #endif

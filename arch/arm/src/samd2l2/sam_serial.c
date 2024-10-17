@@ -1046,6 +1046,16 @@ int up_putc(int ch)
    */
 
   flags = enter_critical_section();
+
+  /* Check for LF */
+
+  if (ch == '\n')
+    {
+      /* Add CR */
+
+      sam_lowputc('\r');
+    }
+
   sam_lowputc(ch);
   leave_critical_section(flags);
 #endif
@@ -1065,6 +1075,15 @@ int up_putc(int ch)
 int up_putc(int ch)
 {
 #ifdef HAVE_SERIAL_CONSOLE
+  /* Check for LF */
+
+  if (ch == '\n')
+    {
+      /* Add CR */
+
+      sam_lowputc('\r');
+    }
+
   sam_lowputc(ch);
 #endif
   return ch;

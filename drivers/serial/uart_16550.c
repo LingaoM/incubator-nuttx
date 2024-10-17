@@ -1786,6 +1786,16 @@ int up_putc(int ch)
    */
 
   flags = enter_critical_section();
+
+  /* Check for LF */
+
+  if (ch == '\n')
+    {
+      /* Add CR */
+
+      u16550_putc(priv, '\r');
+    }
+
   u16550_putc(priv, ch);
   leave_critical_section(flags);
 

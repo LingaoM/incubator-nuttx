@@ -1139,6 +1139,16 @@ int up_putc(int ch)
   uint32_t im;
 
   up_disableuartint(priv, &im);
+
+  /* Check for LF */
+
+  if (ch == '\n')
+    {
+      /* Add CR */
+
+      riscv_lowputc('\r');
+    }
+
   riscv_lowputc(ch);
   up_restoreuartint(priv, im);
 #endif

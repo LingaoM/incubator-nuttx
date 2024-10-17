@@ -1201,6 +1201,15 @@ int up_putc(int ch)
   up_disableuartint(priv, &ier);
 #endif
 
+  /* Check for LF */
+
+  if (ch == '\n')
+    {
+      /* Add CR */
+
+      riscv_lowputc('\r');
+    }
+
   riscv_lowputc(ch);
 #ifdef HAVE_SERIAL_CONSOLE
   up_restoreuartint(priv, ier);
@@ -1247,6 +1256,15 @@ int up_putc(int ch)
 int up_putc(int ch)
 {
 #ifdef HAVE_SERIAL_CONSOLE
+  /* Check for LF */
+
+  if (ch == '\n')
+    {
+      /* Add CR */
+
+      riscv_lowputc('\r');
+    }
+
   riscv_lowputc(ch);
 #endif
   return ch;

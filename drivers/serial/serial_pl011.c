@@ -803,6 +803,15 @@ int up_putc(int ch)
 #ifdef CONSOLE_DEV
   struct uart_dev_s *dev = &CONSOLE_DEV;
 
+  /* Check for LF */
+
+  if (ch == '\n')
+    {
+      /* Add CR */
+
+      pl011_send(dev, '\r');
+    }
+
   pl011_send(dev, ch);
 #endif
 

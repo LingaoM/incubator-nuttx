@@ -75,6 +75,15 @@ void uart_putreg(uart_addrwidth_t base,
 
 int up_putc(int ch)
 {
+  /* Check for LF */
+
+  if (ch == '\n')
+    {
+      /* Add CR */
+
+      x86_lowputc('\r');
+    }
+
   x86_lowputc(ch);
   return ch;
 }
