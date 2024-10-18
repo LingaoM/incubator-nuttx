@@ -54,6 +54,9 @@
 #include <errno.h>
 #include <debug.h>
 #include <assert.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#include <ifaddrs.h>
 
 #include <arpa/inet.h>
 
@@ -608,6 +611,49 @@ static void dns_query_error(FAR const char *prompt, int ret,
 }
 
 /****************************************************************************
+ * Name: dns_support_ipv6
+ *
+ * Description:
+ *   Check IPv6 global address has been available
+ *
+ * Returned Value:
+ *   True if IPv6 is supported, false otherwise.
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NET_IPv6
+static bool dns_support_ipv6(void)
+{
+  bool ipv6 = false;
+  FAR struct ifaddrs *ifaddr;
+  FAR struct ifaddrs *ifa;
+  FAR struct sockaddr_in6 *inaddr;
+
+  if (getifaddrs(&ifaddr) < 0)
+    {
+      nwarn("WARN: getifaddrs failed: %d\n", errno);
+      return false;
+    }
+
+  for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
+    {
+      if (IFF_IS_UP(ifa->ifa_flags))
+        {
+          inaddr = (FAR struct sockaddr_in6 *)ifa->ifa_addr;
+          if (IN6_IS_ADDR_GLOBAL(&inaddr->sin6_addr))
+            {
+              ipv6 = true;
+              break;
+            }
+        }
+    }
+
+  freeifaddrs(ifaddr);
+  return ipv6;
+}
+#endif
+
+/****************************************************************************
  * Name: dns_query_callback
  *
  * Description:
@@ -635,6 +681,9 @@ static int dns_query_callback(FAR void *arg, FAR struct sockaddr *addr,
   int retries;
   int ret;
   int sd;
+#ifdef CONFIG_NET_IPv6
+  bool need_ipv6 = dns_support_ipv6();
+#endif
 
   /* Loop while receive timeout errors occur and there are remaining
    * retries.
@@ -643,7 +692,7 @@ static int dns_query_callback(FAR void *arg, FAR struct sockaddr *addr,
   for (retries = 0; retries < CONFIG_NETDB_DNSCLIENT_RETRIES; retries++)
     {
 #ifdef CONFIG_NET_IPv6
-      if (dns_is_queryfamily(AF_INET6))
+      if (dns_is_queryfamily(AF_INET6) && need_ipv6)
         {
           /* Send the IPv6 query */
 
