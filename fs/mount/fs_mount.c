@@ -71,7 +71,7 @@
     defined(CONFIG_FS_TMPFS) || defined(CONFIG_FS_USERFS) || \
     defined(CONFIG_FS_CROMFS) || defined(CONFIG_FS_UNIONFS) || \
     defined(CONFIG_FS_HOSTFS) || defined(CONFIG_FS_ZIPFS) || \
-    defined(CONFIG_FS_RPMSGFS)
+    defined(CONFIG_FS_RPMSGFS) || defined(CONFIG_FS_ARCHIVEFS)
 #  define NODFS_SUPPORT
 #endif
 
@@ -199,6 +199,9 @@ extern const struct mountpt_operations g_rpmsgfs_operations;
 #ifdef CONFIG_FS_ZIPFS
 extern const struct mountpt_operations g_zipfs_operations;
 #endif
+#ifdef CONFIG_FS_ARCHIVEFS
+extern const struct mountpt_operations g_archivefs_operations;
+#endif
 
 static const struct fsmap_t g_nonbdfsmap[] =
 {
@@ -234,6 +237,9 @@ static const struct fsmap_t g_nonbdfsmap[] =
 #endif
 #ifdef CONFIG_FS_ZIPFS
     { "zipfs", &g_zipfs_operations},
+#endif
+#ifdef CONFIG_FS_ARCHIVEFS
+    { "archivefs", &g_archivefs_operations},
 #endif
     { NULL, NULL },
 };

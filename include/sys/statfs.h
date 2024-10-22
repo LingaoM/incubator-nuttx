@@ -97,6 +97,7 @@
 #define CROMFS_MAGIC          0x4d4f5243
 #define RPMSGFS_MAGIC         0x54534f47
 #define ZIPFS_MAGIC           0x504b
+#define ARCHIVEFS_MAGIC       0x504c
 
 #if defined(CONFIG_FS_LARGEFILE)
 #  define statfs64            statfs

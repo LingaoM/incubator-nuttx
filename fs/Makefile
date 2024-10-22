@@ -39,6 +39,7 @@ include socket/Make.defs
 
 ifneq ($(CONFIG_DISABLE_MOUNTPOINT),y)
 
+include archivefs/Make.defs
 include mount/Make.defs
 include partition/Make.defs
 include fat/Make.defs
