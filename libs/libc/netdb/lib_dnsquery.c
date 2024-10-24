@@ -637,7 +637,8 @@ static bool dns_support_ipv6(void)
 
   for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
     {
-      if (IFF_IS_UP(ifa->ifa_flags))
+      if (ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_INET6 &&
+          IFF_IS_UP(ifa->ifa_flags))
         {
           inaddr = (FAR struct sockaddr_in6 *)ifa->ifa_addr;
           if (IN6_IS_ADDR_GLOBAL(&inaddr->sin6_addr))
