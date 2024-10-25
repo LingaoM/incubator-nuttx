@@ -49,6 +49,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <debug.h>
+#include <stdlib.h>
 
 #include <netinet/in.h>
 
@@ -69,7 +70,6 @@
 #include "icmpv6/icmpv6.h"
 #include "nat/nat.h"
 #include "netdev/netdev.h"
-#include "utils/utils.h"
 
 /****************************************************************************
  * Private Data
@@ -583,7 +583,7 @@ int tcp_selectport(uint8_t domain,
 
   if (g_last_tcp_port == 0)
     {
-      net_getrandom(&g_last_tcp_port, sizeof(uint16_t));
+      arc4random_buf(&g_last_tcp_port, sizeof(uint16_t));
 
       g_last_tcp_port = g_last_tcp_port %
                         (CONFIG_NET_DEFAULT_MAX_PORT -
