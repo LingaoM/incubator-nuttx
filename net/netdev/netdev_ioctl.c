@@ -1032,8 +1032,21 @@ static int netdev_ifr_ioctl(FAR struct socket *psock, int cmd,
         if (dev->d_lltype == NET_LL_ETHERNET ||
             dev->d_lltype == NET_LL_IEEE80211)
           {
-            memcpy(dev->d_mac.ether.ether_addr_octet,
-                   req->ifr_hwaddr.sa_data, IFHWADDRLEN);
+            if (memcmp(dev->d_mac.ether.ether_addr_octet,
+                       req->ifr_hwaddr.sa_data, IFHWADDRLEN))
+              {
+                if (dev->d_setmac != NULL)
+                  {
+                    ret = dev->d_setmac(dev,
+                                    (FAR uint8_t *)req->ifr_hwaddr.sa_data);
+                  }
+
+                if (ret == OK)
+                  {
+                    memcpy(dev->d_mac.ether.ether_addr_octet,
+                           req->ifr_hwaddr.sa_data, IFHWADDRLEN);
+                  }
+              }
           }
         else
 #endif

@@ -518,6 +518,7 @@ struct net_driver_s
   int (*d_ifup)(FAR struct net_driver_s *dev);
   int (*d_ifdown)(FAR struct net_driver_s *dev);
   int (*d_txavail)(FAR struct net_driver_s *dev);
+  int (*d_setmac)(FAR struct net_driver_s *dev, FAR const uint8_t *mac);
 #ifdef CONFIG_NET_MCASTGROUP
   int (*d_addmac)(FAR struct net_driver_s *dev, FAR const uint8_t *mac);
   int (*d_rmmac)(FAR struct net_driver_s *dev, FAR const uint8_t *mac);
