@@ -539,12 +539,14 @@ static ssize_t proc_status(FAR struct proc_file_s *procfile,
       tcb->task_state <= LAST_ASSIGNED_STATE)
     {
       linesize   = procfs_snprintf(procfile->line, STATUS_LINELEN,
-                                   "%-12s%d\n", "CPU:", tcb->cpu);
+                                   "%-12s%03d(0x%08x)\n", "CPU:", tcb->cpu,
+                                   tcb->affinity);
     }
   else
     {
       linesize   = procfs_snprintf(procfile->line, STATUS_LINELEN,
-                                   "%-12s---\n", "CPU:");
+                                   "%-12s---(0x%08x)\n", "CPU:",
+                                   tcb->affinity);
     }
 
   copysize   = procfs_memcpy(procfile->line, linesize, buffer, remaining,
