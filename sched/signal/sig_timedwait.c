@@ -248,6 +248,24 @@ int nxsig_timedwait(FAR const sigset_t *set, FAR struct siginfo *info,
 
   DEBUGASSERT(set != NULL);
 
+  /* If timeout is zero, yield CPU and return
+   * Notice: The behavior of sleep(0) is not defined in POSIX, so there are
+   * different implementations:
+   * 1. In Linux, nanosleep(0) will call schedule() to yield CPU:
+   *    https://elixir.bootlin.com/linux/latest/source/kernel/time/
+   *    hrtimer.c#L2038
+   * 2. In BSD, nanosleep(0) will return immediately:
+   *    https://github.com/freebsd/freebsd-src/blob/
+   *    475fa89800086718bd9249fd4dc3f862549f1f78/crypto/openssh/
+   *    openbsd-compat/bsd-misc.c#L243
+   */
+
+  if (timeout && timeout->tv_sec == 0 && timeout->tv_nsec == 0)
+    {
+      sched_yield();
+      return -EAGAIN;
+    }
+
   /* Several operations must be performed below:  We must determine if any
    * signal is pending and, if not, wait for the signal.  Since signals can
    * be posted from the interrupt level, there is a race condition that
