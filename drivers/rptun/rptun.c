@@ -35,6 +35,7 @@
 #include <nuttx/kmalloc.h>
 #include <nuttx/kthread.h>
 #include <nuttx/mutex.h>
+#include <nuttx/panic_notifier.h>
 #include <nuttx/semaphore.h>
 #include <nuttx/rptun/openamp.h>
 #include <nuttx/rptun/rptun.h>
@@ -155,6 +156,9 @@ static metal_phys_addr_t rptun_pa_to_da(FAR struct rptun_dev_s *dev,
 static metal_phys_addr_t rptun_da_to_pa(FAR struct rptun_dev_s *dev,
                                         metal_phys_addr_t da);
 
+static int rptun_panic_notifier_call(FAR struct notifier_block *nb,
+                                     unsigned long action, FAR void *data);
+
 /****************************************************************************
  * Private Data
  ****************************************************************************/
@@ -196,6 +200,10 @@ static METAL_DECLARE_LIST(g_rptun_priv);
 
 static rmutex_t g_rptun_lockcb = NXRMUTEX_INITIALIZER;
 static rmutex_t g_rptun_lockpriv = NXRMUTEX_INITIALIZER;
+static struct notifier_block g_rptun_panic_notifier =
+{
+  rptun_panic_notifier_call,
+};
 
 /****************************************************************************
  * Private Functions
@@ -1112,6 +1120,17 @@ static int rptun_ioctl_foreach(FAR const char *cpuname, int cmd,
   return ret;
 }
 
+static int rptun_panic_notifier_call(FAR struct notifier_block *nb,
+                                     unsigned long action, FAR void *data)
+{
+  if (action == PANIC_KERNEL_FINAL)
+    {
+      rptun_dump_all();
+    }
+
+  return 0;
+}
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -1325,6 +1344,7 @@ int rptun_initialize(FAR struct rptun_dev_s *dev)
           return ret;
         }
 
+      panic_notifier_chain_register(&g_rptun_panic_notifier);
       onceinit = true;
     }
 
