@@ -1071,29 +1071,22 @@ static void usrsock_rpmsg_poll_setup(FAR struct pollfd *pfds,
 
   net_lock();
 
-  if (events)
-    {
-      if (pfds->events)
-        {
-          ret = psock_poll(psock, pfds, false);
-        }
-
-      if (ret >= 0)
-        {
-          /* The protocol stack monitor flag is different when the events is
-           * POLLIN or POLLOUT, so we have to call poll_setup again.
-           */
-
-          pfds->revents = 0;
-          pfds->events = events;
-          ret = psock_poll(psock, pfds, true);
-        }
-    }
-  else
+  if (pfds->events)
     {
       pfds->revents = 0;
       pfds->events = 0;
       ret = psock_poll(psock, pfds, false);
+    }
+
+  if (events && ret >= 0)
+    {
+      /* The protocol stack monitor flag is different when the events is
+       * POLLIN or POLLOUT, so we have to call poll_setup again.
+       */
+
+      pfds->revents = 0;
+      pfds->events = events;
+      ret = psock_poll(psock, pfds, true);
     }
 
   if (ret < 0)
@@ -1110,7 +1103,7 @@ static void usrsock_rpmsg_poll_setup(FAR struct pollfd *pfds,
 static void usrsock_rpmsg_poll_cb(FAR struct pollfd *pfds)
 {
   FAR struct usrsock_rpmsg_s *priv = (FAR struct usrsock_rpmsg_s *)pfds->arg;
-  int oldevents;
+  int newevents;
   int events = 0;
 
   nxrmutex_lock(&priv->mutex);
@@ -1121,14 +1114,14 @@ static void usrsock_rpmsg_poll_cb(FAR struct pollfd *pfds)
       return;
     }
 
-  oldevents = pfds->events;
+  newevents = pfds->events;
   if (pfds->revents & POLLIN)
     {
       events |= USRSOCK_EVENT_RECVFROM_AVAIL;
 
       /* Stop poll in until recv get called */
 
-      pfds->events &= ~POLLIN;
+      newevents &= ~POLLIN;
       pfds->revents &= ~POLLIN;
     }
 
@@ -1138,7 +1131,7 @@ static void usrsock_rpmsg_poll_cb(FAR struct pollfd *pfds)
 
       /* Stop poll out until send get called */
 
-      pfds->events &= ~POLLOUT;
+      newevents &= ~POLLOUT;
       pfds->revents &= ~POLLOUT;
     }
 
@@ -1158,9 +1151,9 @@ static void usrsock_rpmsg_poll_cb(FAR struct pollfd *pfds)
       pfds->revents &= ~(POLLHUP | POLLERR);
     }
 
-  if (oldevents != pfds->events)
+  if (newevents != pfds->events)
     {
-      usrsock_rpmsg_poll_setup(pfds, pfds->events);
+      usrsock_rpmsg_poll_setup(pfds, newevents);
     }
 
   if (events != 0)
