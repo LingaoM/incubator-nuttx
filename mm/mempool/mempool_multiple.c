@@ -305,7 +305,7 @@ mempool_multiple_get_dict(FAR struct mempool_multiple_s *mpool,
       return NULL;
     }
 
-  addr = (FAR void *)ALIGN_DOWN(blk, mpool->expandsize);
+  addr = (FAR void *)ALIGN_DOWN((uintptr_t)blk, mpool->expandsize);
   if (blk == addr)
     {
       /* It is not a memory block allocated by mempool
