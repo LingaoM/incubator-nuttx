@@ -76,9 +76,9 @@ struct rptun_priv_s
   sem_t                        semrx;
   pid_t                        tid;
 #endif
+  uint16_t                     headrx;
 #ifdef CONFIG_RPTUN_PM
   struct pm_wakelock_s         wakelock;
-  uint16_t                     headrx;
   struct wdog_s                wdog;
 #endif
 #ifdef CONFIG_RPTUN_PING
@@ -212,6 +212,26 @@ static void rptun_wakeup_tx(FAR struct rptun_priv_s *priv)
     }
 }
 
+static inline void rptun_update_rx(FAR struct rptun_priv_s *priv)
+{
+  FAR struct rpmsg_virtio_device *rvdev = &priv->rvdev;
+  FAR struct virtqueue *rvq = rvdev->rvq;
+
+  if (priv->rproc.state != RPROC_RUNNING)
+    {
+      return;
+    }
+
+  if (rpmsg_virtio_get_role(rvdev) == RPMSG_HOST)
+    {
+      priv->headrx = rvq->vq_ring.used->idx;
+    }
+  else
+    {
+      priv->headrx = rvq->vq_ring.avail->idx;
+    }
+}
+
 #ifdef CONFIG_RPTUN_PM
 
 #ifdef CONFIG_RPTUN_PM_AUTORELAX
@@ -266,26 +286,6 @@ static inline void rptun_pm_action(FAR struct rptun_priv_s *priv,
   leave_critical_section(flags);
 }
 
-static inline void rptun_update_rx(FAR struct rptun_priv_s *priv)
-{
-  FAR struct rpmsg_virtio_device *rvdev = &priv->rvdev;
-  FAR struct virtqueue *rvq = rvdev->rvq;
-
-  if (priv->rproc.state != RPROC_RUNNING)
-    {
-      return;
-    }
-
-  if (rpmsg_virtio_get_role(rvdev) == RPMSG_HOST)
-    {
-      priv->headrx = rvq->vq_ring.used->idx;
-    }
-  else
-    {
-      priv->headrx = rvq->vq_ring.avail->idx;
-    }
-}
-
 static inline bool rptun_available_rx(FAR struct rptun_priv_s *priv)
 {
   FAR struct rpmsg_virtio_device *rvdev = &priv->rvdev;
@@ -308,7 +308,6 @@ static inline bool rptun_available_rx(FAR struct rptun_priv_s *priv)
 
 #else
 #  define rptun_pm_action(priv, stay)
-#  define rptun_update_rx(priv)
 #  define rptun_available_rx(priv) true
 #endif
 
@@ -940,10 +939,8 @@ static int rptun_do_ioctl(FAR struct rptun_priv_s *priv, int cmd,
         RPTUN_PANIC(priv->dev);
         break;
       case RPTUNIOC_DUMP:
-#ifdef CONFIG_RPTUN_PM
-        metal_log(METAL_LOG_EMERGENCY, "Remote: %s headrx %d\n",
+        metal_log(METAL_LOG_EMERGENCY, "Remote: %s headrx %u\n",
                   RPTUN_GET_CPUNAME(priv->dev), priv->headrx);
-#endif
         rptun_dump(&priv->rvdev);
         break;
 #ifdef CONFIG_RPTUN_PING
