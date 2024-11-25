@@ -694,6 +694,12 @@ ssize_t psock_tcp_recvfrom(FAR struct socket *psock, FAR struct msghdr *msg,
 
           ret = -ENOTCONN;
         }
+
+      if (conn->dev && !(netdev_verify(conn->dev)
+          && (conn->dev->d_flags & IFF_UP) != 0))
+        {
+          ret = -ENETDOWN;
+        }
     }
 
   /* In general, this implementation will not support non-blocking socket
