@@ -177,7 +177,11 @@ int group_allocate(FAR struct task_tcb_s *tcb, uint8_t ttype)
 
   /* Initialize file descriptors for the TCB */
 
-  files_initlist(&group->tg_filelist);
+  ret = files_initlist(&group->tg_filelist);
+  if (ret < 0)
+    {
+      goto errout_with_member;
+    }
 
   /* Alloc task info for group  */
 
