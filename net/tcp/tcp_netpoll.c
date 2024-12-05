@@ -217,64 +217,19 @@ int tcp_pollsetup(FAR struct socket *psock, FAR struct pollfd *fds)
       goto errout_with_lock;
     }
 
+  if (conn->dev && !(netdev_verify(conn->dev)
+      && (conn->dev->d_flags & IFF_UP) != 0))
+    {
+      _SO_CONN_SETERRNO(conn, ENOTCONN);
+      poll_notify(&fds, 1, POLLERR | POLLHUP);
+      goto errout_with_lock;
+    }
+
   /* Non-blocking connection ? */
 
   nonblock_conn = ((conn->tcpstateflags == TCP_ALLOCATED ||
                     conn->tcpstateflags == TCP_SYN_SENT) &&
                    _SS_ISNONBLOCK(conn->sconn.s_flags));
-
-  /* Check for a loss of connection events.  We need to be careful here.
-   * There are four possibilities:
-   *
-   * 1) The socket is connected and we are waiting for data availability
-   *    events.
-   *
-   *    __SS_ISCONNECTED(f) == true
-   *    __SS_ISLISTENING(f) == false
-   *    __SS_ISCLOSED(f)    == false
-   *
-   *    Action: Wait for data availability events
-   *
-   * 2) This is a listener socket that was never connected and we are
-   *    waiting for connection events.
-   *
-   *    __SS_ISCONNECTED(f) == false
-   *    __SS_ISLISTENING(f) == true
-   *    __SS_ISCLOSED(f)    == false
-   *
-   *    Action: Wait for connection events
-   *
-   * 3) This socket was previously connected, but the peer has gracefully
-   *    closed the connection.
-   *
-   *    __SS_ISCONNECTED(f) == false
-   *    __SS_ISLISTENING(f) == false
-   *    __SS_ISCLOSED(f)    == true
-   *
-   *    Action: Return with POLLHUP|POLLERR events
-   *
-   * 4) This socket was previously connected, but we lost the connection
-   *    due to some exceptional event.
-   *
-   *    __SS_ISCONNECTED(f) == false
-   *    __SS_ISLISTENING(f) == false
-   *    __SS_ISCLOSED(f)    == false
-   *
-   *    Action: Return with POLLHUP|POLLERR events
-   */
-
-  if (!nonblock_conn && !_SS_ISCONNECTED(conn->sconn.s_flags) &&
-      !_SS_ISLISTENING(conn->sconn.s_flags))
-    {
-      /* We were previously connected but lost the connection either due
-       * to a graceful shutdown by the remote peer or because of some
-       * exceptional event.
-       */
-
-      _SO_CONN_SETERRNO(conn, ENOTCONN);
-      poll_notify(&fds, 1,  POLLERR | POLLHUP);
-      goto errout_with_lock;
-    }
 
   /* Find a container to hold the poll information */
 
@@ -355,7 +310,59 @@ int tcp_pollsetup(FAR struct socket *psock, FAR struct pollfd *fds)
       eventset |= POLLRDNORM;
     }
 
-  if (_SS_ISCONNECTED(conn->sconn.s_flags) && psock_tcp_cansend(conn) >= 0)
+  /* Check for a loss of connection events.  We need to be careful here.
+   * There are four possibilities:
+   *
+   * 1) The socket is connected and we are waiting for data availability
+   *    events.
+   *
+   *    __SS_ISCONNECTED(f) == true
+   *    __SS_ISLISTENING(f) == false
+   *    __SS_ISCLOSED(f)    == false
+   *
+   *    Action: Wait for data availability events
+   *
+   * 2) This is a listener socket that was never connected and we are
+   *    waiting for connection events.
+   *
+   *    __SS_ISCONNECTED(f) == false
+   *    __SS_ISLISTENING(f) == true
+   *    __SS_ISCLOSED(f)    == false
+   *
+   *    Action: Wait for connection events
+   *
+   * 3) This socket was previously connected, but the peer has gracefully
+   *    closed the connection.
+   *
+   *    __SS_ISCONNECTED(f) == false
+   *    __SS_ISLISTENING(f) == false
+   *    __SS_ISCLOSED(f)    == true
+   *
+   *    Action: Return with POLLHUP|POLLERR events
+   *
+   * 4) This socket was previously connected, but we lost the connection
+   *    due to some exceptional event.
+   *
+   *    __SS_ISCONNECTED(f) == false
+   *    __SS_ISLISTENING(f) == false
+   *    __SS_ISCLOSED(f)    == false
+   *
+   *    Action: Return with POLLHUP|POLLERR events
+   */
+
+  if (!nonblock_conn && !_SS_ISCONNECTED(conn->sconn.s_flags) &&
+      !_SS_ISLISTENING(conn->sconn.s_flags))
+    {
+      /* We were previously connected but lost the connection either due
+       * to a graceful shutdown by the remote peer or because of some
+       * exceptional event.
+       */
+
+      _SO_CONN_SETERRNO(conn, ENOTCONN);
+      eventset |= POLLERR | POLLHUP;
+    }
+  else if (_SS_ISCONNECTED(conn->sconn.s_flags) &&
+           psock_tcp_cansend(conn) >= 0)
     {
       eventset |= POLLWRNORM;
     }
