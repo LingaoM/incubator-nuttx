@@ -62,6 +62,8 @@
  * Private Functions
  ****************************************************************************/
 
+#ifndef CONFIG_ELF_LOADTO_LMA
+
 /****************************************************************************
  * Name: elf_elfsize
  *
@@ -122,43 +124,6 @@ static void elf_elfsize(FAR struct elf_loadinfo_s *loadinfo)
   loadinfo->textsize = textsize;
   loadinfo->datasize = datasize;
 }
-
-#ifdef CONFIG_ELF_LOADTO_LMA
-/****************************************************************************
- * Name: elf_vma2lma
- *
- * Description:
- *   Convert section`s VMA to LMA according to PhysAddr(p_paddr) of
- *   Program Header.
- *
- * Returned Value:
- *   0 (OK) is returned on success and a negated errno is returned on
- *   failure.
- *
- ****************************************************************************/
-
-static int elf_vma2lma(FAR struct elf_loadinfo_s *loadinfo,
-                       FAR Elf_Shdr *shdr, FAR Elf_Addr *lma)
-{
-  int i;
-
-  for (i = 0; i < loadinfo->ehdr.e_phnum; i++)
-    {
-      FAR Elf_Phdr *phdr = &loadinfo->phdr[i];
-
-      if (shdr->sh_addr >= phdr->p_vaddr &&
-          shdr->sh_addr + shdr->sh_size <= phdr->p_vaddr + phdr->p_memsz &&
-          shdr->sh_offset >= phdr->p_offset &&
-          shdr->sh_offset <= phdr->p_offset + phdr->p_filesz)
-        {
-          *lma = phdr->p_paddr + shdr->sh_addr - phdr->p_vaddr;
-          return 0;
-        }
-    }
-
-  return -ENOENT;
-}
-#endif
 
 /****************************************************************************
  * Name: elf_loadfile
@@ -224,15 +189,6 @@ static inline int elf_loadfile(FAR struct elf_loadinfo_s *loadinfo)
             {
               Elf_Addr addr = shdr->sh_addr;
 
-#ifdef CONFIG_ELF_LOADTO_LMA
-              ret = elf_vma2lma(loadinfo, shdr, &addr);
-              if (ret < 0)
-                {
-                  berr("ERROR: Failed to convert addr %d: %d\n", i, ret);
-                  return ret;
-                }
-#endif
-
               /* Read the section data from sh_offset to specified region */
 
               ret = elf_read(loadinfo, (FAR uint8_t *)addr,
@@ -244,7 +200,6 @@ static inline int elf_loadfile(FAR struct elf_loadinfo_s *loadinfo)
                 }
             }
 
-#ifndef CONFIG_ELF_LOADTO_LMA
           /* If there is no data in an allocated section, then the
            * allocated section must be cleared.
            */
@@ -253,7 +208,6 @@ static inline int elf_loadfile(FAR struct elf_loadinfo_s *loadinfo)
             {
               memset((FAR uint8_t *)shdr->sh_addr, 0, shdr->sh_size);
             }
-#endif
 
           continue;
         }
@@ -300,6 +254,91 @@ static inline int elf_loadfile(FAR struct elf_loadinfo_s *loadinfo)
   return OK;
 }
 
+#else
+
+/****************************************************************************
+ * Name: elf_cmpphdr
+ *
+ * Description:
+ *   Compare two ELF program headers by file offset.
+ *
+ ****************************************************************************/
+
+static int elf_cmpphdr(FAR const void *p1, FAR const void *p2)
+{
+  FAR const Elf_Phdr *phdr1 = (FAR const Elf_Phdr *)p1;
+  FAR const Elf_Phdr *phdr2 = (FAR const Elf_Phdr *)p2;
+
+  if (phdr1->p_offset < phdr2->p_offset)
+    {
+      return -1;
+    }
+  else if (phdr1->p_offset > phdr2->p_offset)
+    {
+      return 1;
+    }
+  else
+    {
+      return 0;
+    }
+}
+
+/****************************************************************************
+ * Name: elf_phdr_in_cache
+ *
+ * Description:
+ *   Check if the program header is already read and in cache.
+ *
+ ****************************************************************************/
+
+static int elf_loadphdr(FAR struct elf_loadinfo_s *loadinfo, int phdrindx)
+{
+  FAR Elf_Phdr *phdr = &loadinfo->phdr[phdrindx];
+  FAR Elf_Phdr *cache;
+  int ret = OK;
+  int i;
+
+  binfo("phdr[%d]: p_offset=%08lx p_vaddr=%08lx"
+        " p_paddr=%08lx p_filesz=%08lx p_memsz=%08lx\n",
+         phdrindx, phdr->p_offset, phdr->p_vaddr, phdr->p_paddr,
+         phdr->p_filesz, phdr->p_memsz);
+
+  if (phdr->p_filesz == 0)
+    {
+      /* we ignore p_memz == 0, it's bss, need it self to init */
+
+      return ret;
+    }
+
+  for (i = 0; i < phdrindx; i++)
+    {
+      cache = &loadinfo->phdr[i];
+      if (cache->p_offset <= phdr->p_offset &&
+          cache->p_offset + cache->p_filesz >=
+          phdr->p_offset + phdr->p_filesz)
+        {
+          /* Already read, we don't need, just memcpy */
+
+          memcpy((FAR uint8_t *)phdr->p_paddr,
+                 (FAR uint8_t *)cache->p_paddr +
+                 phdr->p_offset - cache->p_offset, phdr->p_filesz);
+          return ret;
+        }
+    }
+
+  ret = elf_read(loadinfo, (FAR uint8_t *)phdr->p_paddr,
+                 phdr->p_filesz, phdr->p_offset);
+  if (ret < 0)
+    {
+      berr("ERROR: Failed to read section %d: %d\n", i, ret);
+      return ret;
+    }
+
+  return ret;
+}
+
+#endif
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -319,6 +358,34 @@ static inline int elf_loadfile(FAR struct elf_loadinfo_s *loadinfo)
 
 int elf_load(FAR struct elf_loadinfo_s *loadinfo)
 {
+#ifdef CONFIG_ELF_LOADTO_LMA
+  int ret;
+  int i;
+
+  ret = elf_loadphdrs(loadinfo);
+  if (ret < 0)
+    {
+      berr("ERROR: elf_loadphdrs failed: %d\n", ret);
+      return ret;
+    }
+
+  /* Sort the program headers by p_offset */
+
+  qsort(loadinfo->phdr, loadinfo->ehdr.e_phnum, sizeof(Elf_Phdr),
+        elf_cmpphdr);
+  for (i = 0; i < loadinfo->ehdr.e_phnum; i++)
+    {
+      ret = elf_loadphdr(loadinfo, i);
+      if (ret < 0)
+        {
+          berr("ERROR: Failed to read section %d: %d\n", i, ret);
+          return ret;
+        }
+    }
+
+  return ret;
+#else
+
   /* Determine the heapsize to allocate.  heapsize is ignored if there is
    * no address environment because the heap is a shared resource in that
    * case.  If there is no dynamic stack then heapsize must at least as big
@@ -451,4 +518,6 @@ errout_with_addrenv:
 errout_with_buffers:
   elf_unload(loadinfo);
   return ret;
+#endif
 }
+
