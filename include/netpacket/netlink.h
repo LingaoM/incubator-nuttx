@@ -323,6 +323,7 @@
 #define RT_TABLE_UNSPEC       0
                                  /* 1-251: User defined values */
 #define RT_TABLE_MAIN         254
+#define RT_TABLE_LOCAL        255
 #define RT_TABLE_MAX          0xffffffff
 
 /* rtm_type */
