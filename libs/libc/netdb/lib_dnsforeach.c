@@ -33,8 +33,10 @@
 #include <debug.h>
 
 #include <arpa/inet.h>
+#include <netinet/in.h>
 
 #include <nuttx/net/dns.h>
+#include <nuttx/net/ip.h>
 
 #include "netdb/lib_dns.h"
 
@@ -184,7 +186,8 @@ int dns_foreach_nameserver(dns_callback_t callback, FAR void *arg)
 
           /* The inet_pton() function returns 1 if the conversion succeeds */
 
-          if (ret == 1)
+          if (ret == 1 &&
+              !net_ipv4addr_cmp(u.ipv4.sin_addr.s_addr, INADDR_ANY))
             {
               u.ipv4.sin_family = AF_INET;
               u.ipv4.sin_port   = port;
@@ -205,7 +208,7 @@ int dns_foreach_nameserver(dns_callback_t callback, FAR void *arg)
                * succeeds.
                */
 
-              if (ret == 1)
+              if (ret == 1 && !IN6_IS_ADDR_UNSPECIFIED(&u.ipv6.sin6_addr))
                 {
                   u.ipv6.sin6_family = AF_INET6;
                   u.ipv6.sin6_port   = port;
