@@ -215,7 +215,8 @@ static void task_fssync(FAR struct tcb_s *tcb, FAR void *arg)
       for (j = 0; j < CONFIG_NFILE_DESCRIPTORS_PER_BLOCK; j++)
         {
           ctcb = nxsched_get_tcb(pid);
-          if (ctcb == NULL || ctcb->group == NULL || ctcb != tcb)
+          if (ctcb == NULL || ctcb->group == NULL || ctcb != tcb ||
+              ctcb->group->tg_filelist.fl_crefs <= 0)
             {
               return;
             }
@@ -226,7 +227,8 @@ static void task_fssync(FAR struct tcb_s *tcb, FAR void *arg)
             {
               file_fsync(filep);
               ctcb = nxsched_get_tcb(pid);
-              if (ctcb != NULL && ctcb->group != NULL && ctcb == tcb)
+              if (ctcb != NULL && ctcb->group != NULL && ctcb == tcb &&
+                  ctcb->group->tg_filelist.fl_crefs > 0)
                 {
                   fs_putfilep(filep);
                 }
