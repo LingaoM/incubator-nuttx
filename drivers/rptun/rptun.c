@@ -192,7 +192,6 @@ static METAL_DECLARE_LIST(g_rptun_cb);
 static METAL_DECLARE_LIST(g_rptun_priv);
 
 static rmutex_t g_rptun_lockcb = NXRMUTEX_INITIALIZER;
-static rmutex_t g_rptun_lockpriv = NXRMUTEX_INITIALIZER;
 static struct notifier_block g_rptun_panic_notifier =
 {
   rptun_panic_notifier_call,
@@ -1083,13 +1082,7 @@ static int rptun_ioctl_foreach(FAR const char *cpuname, int cmd,
                                unsigned long value)
 {
   FAR struct metal_list *node;
-  bool needlock = !up_interrupt_context();
   int ret = OK;
-
-  if (needlock)
-    {
-      nxrmutex_lock(&g_rptun_lockpriv);
-    }
 
   metal_list_for_each(&g_rptun_priv, node)
     {
@@ -1103,11 +1096,6 @@ static int rptun_ioctl_foreach(FAR const char *cpuname, int cmd,
           if (ret < 0)
               break;
         }
-    }
-
-  if (needlock)
-    {
-      nxrmutex_unlock(&g_rptun_lockpriv);
     }
 
   return ret;
@@ -1211,7 +1199,7 @@ int rpmsg_register_callback(FAR void *priv_,
   cb->ns_match       = ns_match;
   cb->ns_bind        = ns_bind;
 
-  nxrmutex_lock(&g_rptun_lockpriv);
+  nxrmutex_lock(&g_rptun_lockcb);
 
   metal_list_for_each(&g_rptun_priv, node)
     {
@@ -1256,9 +1244,6 @@ again:
       nxrmutex_unlock(&priv->lock);
     }
 
-  nxrmutex_unlock(&g_rptun_lockpriv);
-
-  nxrmutex_lock(&g_rptun_lockcb);
   metal_list_add_tail(&g_rptun_cb, &cb->node);
   nxrmutex_unlock(&g_rptun_lockcb);
 
@@ -1294,10 +1279,6 @@ void rpmsg_unregister_callback(FAR void *priv_,
         }
     }
 
-  nxrmutex_unlock(&g_rptun_lockcb);
-
-  nxrmutex_lock(&g_rptun_lockpriv);
-
   if (device_destroy)
     {
       metal_list_for_each(&g_rptun_priv, pnode)
@@ -1314,7 +1295,7 @@ void rpmsg_unregister_callback(FAR void *priv_,
         }
     }
 
-  nxrmutex_unlock(&g_rptun_lockpriv);
+  nxrmutex_unlock(&g_rptun_lockcb);
 }
 
 int rptun_initialize(FAR struct rptun_dev_s *dev)
@@ -1393,9 +1374,9 @@ int rptun_initialize(FAR struct rptun_dev_s *dev)
 
   /* Add priv to list */
 
-  nxrmutex_lock(&g_rptun_lockpriv);
+  nxrmutex_lock(&g_rptun_lockcb);
   metal_list_add_tail(&g_rptun_priv, &priv->node);
-  nxrmutex_unlock(&g_rptun_lockpriv);
+  nxrmutex_unlock(&g_rptun_lockcb);
 
   return OK;
 
