@@ -35,6 +35,7 @@
 #include <nuttx/kmalloc.h>
 #include <nuttx/kthread.h>
 #include <nuttx/mutex.h>
+#include <nuttx/rwsem.h>
 #include <nuttx/panic_notifier.h>
 #include <nuttx/nuttx.h>
 #include <nuttx/semaphore.h>
@@ -191,7 +192,7 @@ static const struct image_store_ops g_rptun_storeops =
 static METAL_DECLARE_LIST(g_rptun_cb);
 static METAL_DECLARE_LIST(g_rptun_priv);
 
-static rmutex_t g_rptun_lockcb = NXRMUTEX_INITIALIZER;
+static rw_semaphore_t g_rptun_lock = RWSEM_INITIALIZER;
 static struct notifier_block g_rptun_panic_notifier =
 {
   rptun_panic_notifier_call,
@@ -577,7 +578,7 @@ static void rptun_ns_bind(FAR struct rpmsg_device *rdev,
   FAR struct rptun_bind_s *bind;
   FAR struct metal_list *node;
 
-  nxrmutex_lock(&g_rptun_lockcb);
+  down_read(&g_rptun_lock);
 
   metal_list_for_each(&g_rptun_cb, node)
     {
@@ -589,7 +590,7 @@ static void rptun_ns_bind(FAR struct rpmsg_device *rdev,
           rpmsg_bind_cb_t ns_bind = cb->ns_bind;
           FAR void *cb_priv = cb->priv;
 
-          nxrmutex_unlock(&g_rptun_lockcb);
+          up_read(&g_rptun_lock);
 
           DEBUGASSERT(ns_bind != NULL);
           ns_bind(rdev, cb_priv, name, dest);
@@ -597,8 +598,6 @@ static void rptun_ns_bind(FAR struct rpmsg_device *rdev,
           return;
         }
     }
-
-  nxrmutex_unlock(&g_rptun_lockcb);
 
   bind = kmm_malloc(sizeof(struct rptun_bind_s));
   if (bind == NULL)
@@ -612,6 +611,8 @@ static void rptun_ns_bind(FAR struct rpmsg_device *rdev,
   nxrmutex_lock(&priv->lock);
   metal_list_add_tail(&priv->bind, &bind->node);
   nxrmutex_unlock(&priv->lock);
+
+  up_read(&g_rptun_lock);
 }
 
 static void rptun_ns_unbind(FAR struct rpmsg_device *rdev,
@@ -808,7 +809,7 @@ static int rptun_dev_start(FAR struct remoteproc *rproc)
 
   /* Broadcast device_created to all registers */
 
-  nxrmutex_lock(&g_rptun_lockcb);
+  down_read(&g_rptun_lock);
 
   metal_list_for_each(&g_rptun_cb, node)
     {
@@ -821,7 +822,7 @@ static int rptun_dev_start(FAR struct remoteproc *rproc)
       rptun_update_rx(priv);
     }
 
-  nxrmutex_unlock(&g_rptun_lockcb);
+  up_read(&g_rptun_lock);
 
   /* Register callback to mbox for receiving remote message */
 
@@ -881,7 +882,7 @@ static int rptun_dev_stop(FAR struct remoteproc *rproc, bool stop_ns)
 
   /* Remove priv from list */
 
-  nxrmutex_lock(&g_rptun_lockcb);
+  down_read(&g_rptun_lock);
 
   /* Broadcast device_destroy to all registers */
 
@@ -894,7 +895,7 @@ static int rptun_dev_stop(FAR struct remoteproc *rproc, bool stop_ns)
         }
     }
 
-  nxrmutex_unlock(&g_rptun_lockcb);
+  up_read(&g_rptun_lock);
 
   /* Remote proc remove */
 
@@ -1082,7 +1083,14 @@ static int rptun_ioctl_foreach(FAR const char *cpuname, int cmd,
                                unsigned long value)
 {
   FAR struct metal_list *node;
+  bool needlock;
   int ret = OK;
+
+  needlock = !up_interrupt_context() && !sched_idletask();
+  if (needlock)
+    {
+      down_read(&g_rptun_lock);
+    }
 
   metal_list_for_each(&g_rptun_priv, node)
     {
@@ -1096,6 +1104,11 @@ static int rptun_ioctl_foreach(FAR const char *cpuname, int cmd,
           if (ret < 0)
               break;
         }
+    }
+
+  if (needlock)
+    {
+      up_read(&g_rptun_lock);
     }
 
   return ret;
@@ -1199,7 +1212,9 @@ int rpmsg_register_callback(FAR void *priv_,
   cb->ns_match       = ns_match;
   cb->ns_bind        = ns_bind;
 
-  nxrmutex_lock(&g_rptun_lockcb);
+  down_write(&g_rptun_lock);
+  metal_list_add_tail(&g_rptun_cb, &cb->node);
+  downgrade_write(&g_rptun_lock);
 
   metal_list_for_each(&g_rptun_priv, node)
     {
@@ -1244,8 +1259,7 @@ again:
       nxrmutex_unlock(&priv->lock);
     }
 
-  metal_list_add_tail(&g_rptun_cb, &cb->node);
-  nxrmutex_unlock(&g_rptun_lockcb);
+  up_read(&g_rptun_lock);
 
   return 0;
 }
@@ -1259,7 +1273,7 @@ void rpmsg_unregister_callback(FAR void *priv_,
   FAR struct metal_list *node;
   FAR struct metal_list *pnode;
 
-  nxrmutex_lock(&g_rptun_lockcb);
+  down_write(&g_rptun_lock);
 
   metal_list_for_each(&g_rptun_cb, node)
     {
@@ -1279,6 +1293,7 @@ void rpmsg_unregister_callback(FAR void *priv_,
         }
     }
 
+  downgrade_write(&g_rptun_lock);
   if (device_destroy)
     {
       metal_list_for_each(&g_rptun_priv, pnode)
@@ -1295,7 +1310,7 @@ void rpmsg_unregister_callback(FAR void *priv_,
         }
     }
 
-  nxrmutex_unlock(&g_rptun_lockcb);
+  up_read(&g_rptun_lock);
 }
 
 int rptun_initialize(FAR struct rptun_dev_s *dev)
@@ -1374,9 +1389,9 @@ int rptun_initialize(FAR struct rptun_dev_s *dev)
 
   /* Add priv to list */
 
-  nxrmutex_lock(&g_rptun_lockcb);
+  down_write(&g_rptun_lock);
   metal_list_add_tail(&g_rptun_priv, &priv->node);
-  nxrmutex_unlock(&g_rptun_lockcb);
+  up_write(&g_rptun_lock);
 
   return OK;
 
