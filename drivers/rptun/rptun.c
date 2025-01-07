@@ -901,6 +901,7 @@ static int rptun_dev_stop(FAR struct remoteproc *rproc, bool stop_ns)
 
   rpmsg_deinit_vdev(&priv->rvdev);
   remoteproc_remove_virtio(rproc, priv->rvdev.vdev);
+  priv->rvdev.vdev = NULL;
 
   /* Remote proc stop and shutdown */
 
