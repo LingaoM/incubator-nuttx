@@ -134,6 +134,7 @@ int tcp_getsockopt(FAR struct socket *psock, int option,
         break;
 
       case TCP_NODELAY:  /* Avoid coalescing of small segments. */
+      case TCP_CORK:     /* coalescing of small segments. */
         if (*value_len < sizeof(int))
           {
             ret                = -EINVAL;
@@ -144,7 +145,7 @@ int tcp_getsockopt(FAR struct socket *psock, int option,
 
             /* Always true here since we do not support Nagle. */
 
-            *nodelay           = 1;
+            *nodelay           = option == TCP_NODELAY ? 1 : 0;
             *value_len         = sizeof(int);
             ret                = OK;
           }
