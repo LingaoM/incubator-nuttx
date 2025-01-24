@@ -72,6 +72,7 @@ function setup_environment()
       "libmp3lame-dev:i386" \
       "libmad0-dev:i386" \
       "libv4l-dev:i386" \
+      "ninja-build"
       "npm" \
       "nodejs" \
       "xxd" \
