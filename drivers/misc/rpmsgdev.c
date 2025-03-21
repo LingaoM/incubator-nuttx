@@ -43,6 +43,7 @@
 #include <nuttx/net/ioctl.h>
 #include <nuttx/drivers/rpmsgdev.h>
 #include <nuttx/power/battery_ioctl.h>
+#include <nuttx/motor/motor_ioctl.h>
 
 #include "rpmsgdev.h"
 
@@ -639,6 +640,8 @@ static ssize_t rpmsgdev_ioctl_arglen(int cmd)
       case BATIOC_GET_PROTOCOL:
       case BATIOC_OPERATE:
         return sizeof(struct batio_operate_msg_s);
+      case MTRIOC_GET_STATE:
+        return sizeof(struct motor_state_s);
       default:
         return -ENOTTY;
     }
