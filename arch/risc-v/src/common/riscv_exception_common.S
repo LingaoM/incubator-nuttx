@@ -120,7 +120,7 @@ exception_common:
 
 #if CONFIG_ARCH_INTERRUPTSTACK > 15
 
-  /* Switch to interrupt stack */
+  /* Switch to interrupt stack if needed */
 
   setintstack t0, t1
 

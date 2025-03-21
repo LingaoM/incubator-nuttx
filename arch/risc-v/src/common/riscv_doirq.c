@@ -31,6 +31,7 @@
 #include <nuttx/addrenv.h>
 #include <nuttx/arch.h>
 #include <nuttx/board.h>
+#include <arch/barriers.h>
 #include <arch/board/board.h>
 #include <sched/sched.h>
 
@@ -39,6 +40,34 @@
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
+
+/* ISR preemption per ARCH_HIPRI_INTERRUPT */
+#ifdef CONFIG_ARCH_HIPRI_INTERRUPT
+
+static inline_function void irq_nested_dipatch(int irq, uintptr_t *regs)
+{
+  /* exception should not be interrupt by any other interrupt.
+   * for example, ecall or panic triggered.
+   */
+
+  bool preemptable = irq > RISCV_MAX_EXCEPTION;
+  if (preemptable)
+    {
+      up_irq_enable();
+    }
+
+  irq_dispatch(irq, regs);
+
+  if (preemptable)
+    {
+      up_irq_disable();
+    }
+}
+
+#  define IRQ_DISPATCH(irq, regs) irq_nested_dipatch(irq, regs)
+#else
+#  define IRQ_DISPATCH(irq, regs) irq_dispatch(irq, regs)
+#endif
 
 /****************************************************************************
  * Public Data
@@ -52,11 +81,7 @@
  * Private Functions
  ****************************************************************************/
 
-/****************************************************************************
- * Public Functions
- ****************************************************************************/
-
-uintptr_t *riscv_doirq(int irq, uintptr_t *regs)
+static uintptr_t *riscv_doirq_top(int irq, uintptr_t *regs)
 {
   board_autoled_on(LED_INIRQ);
 #ifdef CONFIG_SUPPRESS_INTERRUPTS
@@ -72,16 +97,26 @@ uintptr_t *riscv_doirq(int irq, uintptr_t *regs)
 
   /* Current regs non-zero indicates that we are processing an interrupt;
    * CURRENT_REGS is also used to manage interrupt level context switches.
-   *
-   * Nested interrupts are not supported
    */
 
   DEBUGASSERT(CURRENT_REGS == NULL);
   CURRENT_REGS = regs;
 
+  /* As irq nested supported, we have to makesure CURRENT_REG modified
+   * before allow new interrupt to enter.
+   */
+
+  __DMB();
+
   /* Deliver the IRQ */
 
-  irq_dispatch(irq, regs);
+  IRQ_DISPATCH(irq, regs);
+
+  /* As irq nested supported, have to ensure interrupt disabled before
+   * get the lastest regs.
+   */
+
+  __DMB();
 
   /* Check for a context switch.  If a context switch occurred, then
    * CURRENT_REGS will have a different value than it did on entry.  If an
@@ -131,4 +166,19 @@ uintptr_t *riscv_doirq(int irq, uintptr_t *regs)
 #endif
   board_autoled_off(LED_INIRQ);
   return regs;
+}
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+uintptr_t *riscv_doirq(int irq, uintptr_t *regs)
+{
+  if (up_interrupt_context())
+    {
+      IRQ_DISPATCH(irq, regs);
+      return regs;
+    }
+
+  return riscv_doirq_top(irq, regs);
 }
