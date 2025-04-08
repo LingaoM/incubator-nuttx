@@ -244,6 +244,15 @@ int dns_add_nameserver(FAR const struct sockaddr *addr, socklen_t addrlen)
 
   fclose(stream);
   stream = fopen(CONFIG_NETDB_RESOLVCONF_PATH, "w");
+  if (stream == NULL)
+    {
+      dns_unlock();
+      ret = -get_errno();
+      nerr("ERROR: Failed to open %s: %d\n",
+           CONFIG_NETDB_RESOLVCONF_PATH, ret);
+      DEBUGASSERT(ret < 0);
+      return ret;
+    }
 
   /* Write the new record to the head of the resolv.conf file. */
 
