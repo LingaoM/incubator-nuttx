@@ -239,6 +239,7 @@
 #define SNIOC_FULL_CHECK           _SNIOC(0x006a)  /* Full check */
 #define SNIOC_FEAT_MANAGE          _SNIOC(0x006b)  /* Feature manage command */
 #define SNIOC_SET_SCALE_XL         _SNIOC(0x006c)  /* Set accelerator scale command */
+#define SNIOC_SET_ORIENTATION      _SNIOC(0x006d)  /* Set orientation command */
 
 /* Command:      SNIOC_GET_STATE
  * Description:  Get state for all subscribers, include min_interval,
