@@ -29,6 +29,7 @@
 #include <setjmp.h>
 #include <syslog.h>
 #include <assert.h>
+#include <string.h>
 
 #include <nuttx/init.h>
 #include <nuttx/arch.h>
@@ -158,8 +159,23 @@ const char *__ubsan_default_options(void)
 
 int main(int argc, char **argv, char **envp)
 {
+  int i;
+
   g_argc = argc;
   g_argv = argv;
+
+  /* Parse simulator-specific options before handing control to NuttX.
+   * --sim-rt-ratio=<percent>  Set simulated-to-real time ratio in percent
+   *   (default 100).  Values > 100 speed up simulated time; < 100 slow down.
+   */
+
+  for (i = 1; i < argc; i++)
+    {
+      if (strncmp(argv[i], "--sim-rt-ratio=", 15) == 0)
+        {
+          host_set_timeratio(atoi(argv[i] + 15));
+        }
+    }
 
 #ifdef CONFIG_ALLSYMS
   allsyms_relocate();

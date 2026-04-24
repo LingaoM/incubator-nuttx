@@ -232,6 +232,7 @@ int host_unlinkshmem(const char *name);
 uint64_t host_gettime(bool rtc);
 void host_sleep(uint64_t nsec);
 void host_sleepuntil(uint64_t nsec);
+void host_set_timeratio(int ratio);
 int host_timerirq(void);
 int host_settimer(uint64_t nsec);
 
