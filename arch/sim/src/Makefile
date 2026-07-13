@@ -107,7 +107,10 @@ ifeq ($(CONFIG_FS_LARGEFILE),y)
 endif
 
 HOSTSRCS  = sim_hostirq.c sim_hostmemory.c sim_hostmisc.c sim_hosttime.c sim_hostuart.c
-HOSTSRCS += sim_hostfs.c
+HOSTSRCS += sim_hostfs.c sim_hostsocket.c
+ifeq ($(CONFIG_HOST_LINUX),y)
+  HOSTSRCS += sim_hostepoll.c
+endif
 
 ifeq ($(CONFIG_SIM_BSIM_TIME),y)
   HOSTSRCS += sim_bsimtime.c

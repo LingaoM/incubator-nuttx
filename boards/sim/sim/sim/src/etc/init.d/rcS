@@ -20,6 +20,6 @@
 
 #include <nuttx/config.h>
 
-#ifdef CONFIG_FS_HOSTFS
-mount -t hostfs -o fs=. /data
+#ifdef CONFIG_MIDC
+miio_bt
 #endif
