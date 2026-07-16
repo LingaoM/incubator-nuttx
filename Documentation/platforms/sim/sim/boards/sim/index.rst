@@ -1075,6 +1075,18 @@ NOTES
      the above text in place until I get the opportunity to verify that the
      new UART simulation fixes the problem.
 
+     The default simulated UART mode opens an existing host path configured
+     by ``CONFIG_SIM_UARTx_NAME``.  This works for a physical host serial
+     device or for a PTY pair created externally, for example by ``socat``.
+     It also means the host endpoint must exist before the UART is opened,
+     and changing the host path normally requires changing the configuration.
+
+     If ``CONFIG_SIM_UART_PTY`` is enabled, NuttX creates the host
+     pseudoterminal when the simulated UART is opened and prints the host
+     PTY slave path.  In this mode ``CONFIG_SIM_UARTx_NAME`` remains the
+     stable NuttX device name, while test tools can attach to the printed
+     host path at run time.
+
   2019-05-04:  Something has changed.  Today this configuration failed to
      build because is requires CONFIG_NX_XYINPUT=y in the configuration. That
      indicates mouse or touchscreen support.  Apparently, the current NxWM

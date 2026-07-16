@@ -236,6 +236,15 @@ void host_set_timeratio(int ratio);
 int host_timerirq(void);
 int host_settimer(uint64_t nsec);
 
+#ifdef CONFIG_SIM_BSIM_TIME
+int host_bsimtime_init(const char *sim_id, const char *phy_id,
+                       unsigned int dev_nbr);
+uint64_t host_bsimtime_gettime(void);
+bool host_bsimtime_is_enabled(void);
+void host_bsimtime_sleepuntil(uint64_t nsec);
+void host_bsimtime_disconnect(void);
+#endif
+
 /* sim_sigdeliver.c *********************************************************/
 
 void sim_sigdeliver(void);
@@ -269,6 +278,7 @@ void sim_uartinit(void);
 
 void host_uart_start(void);
 int  host_uart_open(const char *pathname);
+int  host_uart_openpty(const char *name);
 void host_uart_close(int fd);
 int  host_uart_puts(int fd, const char *buf, size_t size);
 int  host_uart_gets(int fd, char *buf, size_t size);

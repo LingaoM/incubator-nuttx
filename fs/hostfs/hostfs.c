@@ -35,7 +35,6 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <debug.h>
-
 #include <nuttx/lib/lib.h>
 #include <nuttx/mutex.h>
 #include <nuttx/fs/fs.h>
@@ -45,12 +44,6 @@
 
 #include "inode/inode.h"
 #include "hostfs.h"
-
-/****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
-
-#define HOSTFS_RETRY_DELAY_MS       10
 
 /****************************************************************************
  * Private Types
@@ -230,7 +223,7 @@ static void hostfs_mkpath(FAR struct hostfs_mountpt_s  *fs,
 
   if (depth >= 0)
     {
-      strlcat(path, &relpath[first], pathlen - strlen(path));
+      strlcat(path, &relpath[first], pathlen);
     }
 }
 
@@ -605,13 +598,21 @@ static int hostfs_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
 
   ret = host_ioctl(hf->fd, cmd, arg);
 
-  if (ret < 0 && cmd == FIOC_FILEPATH)
+  if (ret < 0)
     {
-      FAR char *path = (FAR char *)(uintptr_t)arg;
-      ret = inode_getpath(filep->f_inode, path, PATH_MAX);
-      if (ret >= 0)
+      switch (cmd)
         {
-          strlcat(path, hf->relpath, PATH_MAX);
+          case FIOC_FILEPATH:
+            {
+              FAR char *path = (FAR char *)(uintptr_t)arg;
+              ret = inode_getpath(filep->f_inode, path, PATH_MAX);
+              if (ret >= 0)
+                {
+                  strlcat(path, hf->relpath, PATH_MAX);
+                }
+            }
+
+            break;
         }
     }
 

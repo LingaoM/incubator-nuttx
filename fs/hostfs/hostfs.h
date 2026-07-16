@@ -27,6 +27,7 @@
 
 #include <nuttx/config.h>
 
+#include <limits.h>
 #include <sys/types.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -35,7 +36,7 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
-#define HOSTFS_MAX_PATH     256
+#define HOSTFS_MAX_PATH     PATH_MAX
 
 /****************************************************************************
  * Public Types
