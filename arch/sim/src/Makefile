@@ -134,6 +134,35 @@ endif
 HOSTSRCS  = sim_hostirq.c sim_hostmemory.c sim_hostmisc.c sim_hosttime.c sim_hostuart.c
 HOSTSRCS += sim_hostfs.c sim_errno.c
 
+ifeq ($(CONFIG_SIM_BSIM_TIME),y)
+  HOSTSRCS += sim_bsimtime.c
+  BSIM_SKIP_PATH_CHECK_GOALS := clean distclean clean_context context
+  BSIM_CHECK_PATHS :=
+  ifeq ($(MAKECMDGOALS),)
+    BSIM_CHECK_PATHS := y
+  else ifneq ($(filter-out $(BSIM_SKIP_PATH_CHECK_GOALS),$(MAKECMDGOALS)),)
+    BSIM_CHECK_PATHS := y
+  endif
+  ifeq ($(BSIM_CHECK_PATHS),y)
+    ifeq ($(BSIM_COMPONENTS_PATH),)
+      $(error CONFIG_SIM_BSIM_TIME requires BSIM_COMPONENTS_PATH to point to \
+        the BabbleSim components directory)
+    endif
+    ifeq ($(BSIM_LIBS_DIR),)
+      ifeq ($(BSIM_OUT_PATH),)
+        $(error CONFIG_SIM_BSIM_TIME requires BSIM_LIBS_DIR or BSIM_OUT_PATH \
+          to locate BabbleSim libraries)
+      endif
+      BSIM_LIBS_DIR := $(BSIM_OUT_PATH)/lib
+    endif
+  endif
+  HOSTCFLAGS += ${INCDIR_PREFIX}$(BSIM_COMPONENTS_PATH)/libPhyComv1/src
+  HOSTCFLAGS += ${INCDIR_PREFIX}$(BSIM_COMPONENTS_PATH)/libUtilv1/src
+  STDLIBS += -Wl,-rpath,$(BSIM_LIBS_DIR)
+  STDLIBS += $(BSIM_LIBS_DIR)/libPhyComv1.so
+  STDLIBS += $(BSIM_LIBS_DIR)/libUtilv1.so
+endif
+
 hostfs.h: $(TOPDIR)/include/nuttx/fs/hostfs.h
 	@echo "CP:  $<"
 	$(Q) cp $< $@

@@ -165,6 +165,12 @@ noprofile_function const char *__ubsan_default_options(void)
 
 int main(int argc, char **argv, char **envp)
 {
+#ifdef CONFIG_SIM_BSIM_TIME
+  const char *bsim_sim_id = CONFIG_SIM_BSIM_SIM_ID;
+  const char *bsim_phy_id = CONFIG_SIM_BSIM_PHY_ID;
+  unsigned int bsim_dev_nbr = CONFIG_SIM_BSIM_DEVICE_NBR;
+  int bsim_enabled = 0;
+#endif
   int i;
 
   g_argc = argc;
@@ -173,6 +179,8 @@ int main(int argc, char **argv, char **envp)
   /* Parse simulator-specific options before handing control to NuttX.
    * --sim-rt-ratio=<percent>  Set simulated-to-real time ratio in percent
    *   (default 100).  Values > 100 speed up simulated time; < 100 slow down.
+   * --sim-bsim-enabled  Use BabbleSim PHY time when CONFIG_SIM_BSIM_TIME is
+   *   enabled.
    */
 
   for (i = 1; i < argc; i++)
@@ -181,7 +189,33 @@ int main(int argc, char **argv, char **envp)
         {
           host_set_timeratio(atoi(argv[i] + 15));
         }
+#ifdef CONFIG_SIM_BSIM_TIME
+      else if (strcmp(argv[i], "--sim-bsim-enabled") == 0)
+        {
+          bsim_enabled = 1;
+        }
+      else if (strncmp(argv[i], "--sim-bsim-sid=", 15) == 0)
+        {
+          bsim_sim_id = argv[i] + 15;
+        }
+      else if (strncmp(argv[i], "--sim-bsim-pid=", 15) == 0)
+        {
+          bsim_phy_id = argv[i] + 15;
+        }
+      else if (strncmp(argv[i], "--sim-bsim-dev=", 15) == 0)
+        {
+          bsim_dev_nbr = atoi(argv[i] + 15);
+        }
+#endif
     }
+
+#ifdef CONFIG_SIM_BSIM_TIME
+  if (bsim_enabled &&
+      host_bsimtime_init(bsim_sim_id, bsim_phy_id, bsim_dev_nbr) < 0)
+    {
+      return EXIT_FAILURE;
+    }
+#endif
 
 #ifdef CONFIG_ALLSYMS
   allsyms_relocate();
