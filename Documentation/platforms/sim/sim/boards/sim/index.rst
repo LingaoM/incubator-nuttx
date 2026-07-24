@@ -552,6 +552,27 @@ Common Configuration Information
             CONFIG_SIM_X8664_SYSTEMV=y
             CONFIG_SIM_M32=n
 
+Simulated UART PTY
+==================
+
+If ``CONFIG_SIM_UART_PTY`` is disabled, each simulated UART opens the host
+path configured by ``CONFIG_SIM_UARTx_NAME`` directly.  The host-side serial
+endpoint must exist before the UART is opened.  For example::
+
+    socat PTY,link=/dev/ttySIM0 PTY,link=/dev/ttyNX0
+
+In that mode ``CONFIG_SIM_UARTx_NAME`` is both the NuttX device name and the
+host path that the sim UART backend opens.  This works when the host path is
+stable, but it is inconvenient for automated tests and generated PTYs: the
+peer device must exist before the UART is opened, and changing the host path
+requires changing the NuttX configuration.
+
+If ``CONFIG_SIM_UART_PTY`` is enabled, NuttX creates the host pseudoterminal
+when the simulated UART is opened and prints the host PTY slave path.  The
+configured ``SIM_UARTx_NAME`` remains the NuttX device name, while the host
+PTY path is allocated at runtime and can be passed to the external simulator
+or test program.
+
 Configurations
 ==============
 
